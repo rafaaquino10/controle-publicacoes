@@ -106,7 +106,7 @@ export default function EntradaPage() {
           className="card p-5 flex flex-col items-center gap-3 cursor-pointer active:scale-95 transition-transform border-none"
           style={{ background: "var(--surface-card)" }}
         >
-          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(30,58,95,0.1)", color: "var(--color-primary)" }}>
+          <div className="w-12 h-12 rounded-md flex items-center justify-center" style={{ background: "color-mix(in srgb, var(--color-primary) 10%, transparent)", color: "var(--color-primary)" }}>
             <FileCheck2 className="w-6 h-6" />
           </div>
           <p className="text-sm font-bold text-center leading-tight m-0" style={{ color: "var(--text-secondary)" }}>
@@ -119,7 +119,7 @@ export default function EntradaPage() {
           className="card p-5 flex flex-col items-center gap-3 cursor-pointer active:scale-95 transition-transform border-none"
           style={{ background: "var(--surface-card)" }}
         >
-          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(30,58,95,0.1)", color: "var(--color-primary)" }}>
+          <div className="w-12 h-12 rounded-md flex items-center justify-center" style={{ background: "color-mix(in srgb, var(--color-primary) 10%, transparent)", color: "var(--color-primary)" }}>
             <PackagePlus className="w-6 h-6" />
           </div>
           <p className="text-sm font-bold text-center leading-tight m-0" style={{ color: "var(--text-secondary)" }}>
