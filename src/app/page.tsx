@@ -1,65 +1,110 @@
-import Image from "next/image";
+import { auth } from "@/lib/auth"
+import { getDashboardAlerts, getPendingShipmentsCount } from "@/actions/analytics.actions"
+import Link from "next/link"
+import { Suspense } from "react"
+import CongregationSelector from "@/components/CongregationSelector"
 
-export default function Home() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ cong?: string }> }) {
+  const session = await auth()
+  const user = session?.user as any
+  const userRole = user?.role || "SERVO"
+  const defaultCongId = user?.congregationId || "vila-yara-id"
+  const params = await searchParams
+  const congId = (userRole === "SS" && params.cong) ? params.cong : defaultCongId
+
+  const [{ stockOut, runningLow }, pendingShipments] = await Promise.all([
+    getDashboardAlerts(congId),
+    getPendingShipmentsCount(congId),
+  ])
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="animate-in flex flex-col gap-5">
+      {/* Saudação */}
+      <div>
+        <h2 className="page-title">Olá, {user?.name?.split(" ")[0] || "Servo"}</h2>
+        <p className="page-subtitle">Visão geral do estoque de publicações</p>
+      </div>
+
+      {/* Seletor de congregação (SS only) */}
+      {userRole === "SS" && (
+        <Suspense fallback={null}>
+          <CongregationSelector defaultCongId={defaultCongId} />
+        </Suspense>
+      )}
+
+      {/* Cards de resumo */}
+      <div className="grid grid-cols-3 gap-3">
+        <SummaryCard value={stockOut.length} label="Itens Zerados" />
+        <SummaryCard value={runningLow.length} label="Estoque Baixo" />
+        <SummaryCard value={pendingShipments} label="Remessas Pendentes" />
+      </div>
+
+      {/* Tabela de itens que requerem atenção */}
+      {(stockOut.length > 0 || runningLow.length > 0) && (
+        <div className="card p-0 overflow-hidden">
+          <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border-color)" }}>
+            <h3 className="section-label m-0">Itens que Requerem Atenção</h3>
+          </div>
+          <table className="w-full text-sm" style={{ color: "var(--text-primary)" }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid var(--border-color)" }}>
+                <th className="text-left px-4 py-2 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>Publicação</th>
+                <th className="text-right px-4 py-2 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>Qtd</th>
+                <th className="text-right px-4 py-2 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stockOut.map((entry) => (
+                <tr key={entry.id} style={{ borderBottom: "1px solid var(--border-color)" }}>
+                  <td className="px-4 py-2">
+                    <p className="font-semibold text-xs m-0 truncate max-w-[180px]">{entry.item.title}</p>
+                    <p className="text-[10px] m-0" style={{ color: "var(--text-muted)" }}>{entry.item.pubCode}</p>
+                  </td>
+                  <td className="px-4 py-2 text-right font-bold">{entry.currentQuantity}</td>
+                  <td className="px-4 py-2 text-right">
+                    <span className="badge badge-red">Zerado</span>
+                  </td>
+                </tr>
+              ))}
+              {runningLow.map((entry) => (
+                <tr key={entry.id} style={{ borderBottom: "1px solid var(--border-color)" }}>
+                  <td className="px-4 py-2">
+                    <p className="font-semibold text-xs m-0 truncate max-w-[180px]">{entry.item.title}</p>
+                    <p className="text-[10px] m-0" style={{ color: "var(--text-muted)" }}>{entry.item.pubCode}</p>
+                  </td>
+                  <td className="px-4 py-2 text-right font-bold">{entry.currentQuantity}</td>
+                  <td className="px-4 py-2 text-right">
+                    <span className="badge badge-amber">Baixo</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      )}
+
+      {/* Painel SS — Inventário Betel */}
+      {userRole === "SS" && (
+        <div className="card p-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold m-0" style={{ color: "var(--text-primary)" }}>Inventário Betel</h3>
+            <p className="text-xs mt-0.5 m-0" style={{ color: "var(--text-muted)" }}>
+              Prazo de envio: dia 10 · {pendingShipments} remessa(s) pendente(s)
+            </p>
+          </div>
+          <Link href="/relatorios" className="no-underline btn btn-primary btn-sm">Gerar</Link>
         </div>
-      </main>
+      )}
     </div>
-  );
+  )
+}
+
+function SummaryCard({ value, label, sublabel }: { value: number; label: string; sublabel?: string }) {
+  return (
+    <div className="card p-4">
+      <p className="text-xs font-semibold mb-1 m-0" style={{ color: "var(--text-muted)" }}>{label}</p>
+      <p className="text-2xl font-bold m-0" style={{ color: "var(--text-primary)" }}>{value}</p>
+      {sublabel && <p className="text-[10px] mt-1 m-0" style={{ color: "var(--text-muted)" }}>{sublabel}</p>}
+    </div>
+  )
 }
