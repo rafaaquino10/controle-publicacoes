@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react"
 import { useSession } from "next-auth/react"
-import { ArrowUpRight, Search, CheckCircle2, Package, Users, MapPin } from "lucide-react"
+import { Search, CheckCircle2, Package, Users, MapPin } from "lucide-react"
 import { searchItems } from "@/actions/item.actions"
 import { getLocations } from "@/actions/location.actions"
 import { registerStockOut } from "@/actions/inventory.actions"
@@ -106,27 +106,22 @@ export default function SaidaPage() {
 
   const destOptions: Array<{ value: DestinationType; label: string; icon: typeof Users; color: string }> = [
     { value: "PUBLICADORES", label: "Publicadores",   icon: Users,  color: "var(--color-primary)" },
-    { value: "GRUPO_CAMPO",  label: "Grupo de Campo", icon: MapPin, color: "#d97706" },
-    { value: "MOSTRUARIO",   label: "Mostruário",     icon: Package, color: "#059669" },
+    { value: "GRUPO_CAMPO",  label: "Grupo de Campo", icon: MapPin, color: "var(--color-warning)" },
+    { value: "MOSTRUARIO",   label: "Mostruário",     icon: Package, color: "var(--color-success)" },
   ]
 
   return (
     <div className="animate-in flex flex-col gap-5">
       <div>
-        <h2 className="page-title flex items-center gap-2">
-          <ArrowUpRight className="w-6 h-6" style={{ color: "var(--color-error)" }} />
-          Registro de Saída
-        </h2>
+        <h2 className="page-title">Registro de Saída</h2>
         <p className="page-subtitle">Retire publicações do estoque.</p>
       </div>
 
       {/* Sucesso */}
       {success && (
-        <div className="card p-8 text-center animate-in" style={{ borderColor: "var(--color-success)" }}>
-          <CheckCircle2 className="w-14 h-14 mx-auto mb-3" style={{ color: "var(--color-success)" }} />
-          <p className="font-bold text-lg m-0" style={{ color: "var(--color-success)" }}>
-            Saída registrada!
-          </p>
+        <div className="card p-6 text-center animate-in" style={{ background: "color-mix(in srgb, var(--color-success) 5%, var(--surface-card))", borderColor: "var(--color-success)" }}>
+          <CheckCircle2 className="w-10 h-10 mx-auto mb-2" style={{ color: "var(--color-success)" }} />
+          <p className="font-bold text-base m-0" style={{ color: "var(--color-success)" }}>Saída registrada!</p>
         </div>
       )}
 
