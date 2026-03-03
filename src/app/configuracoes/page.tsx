@@ -20,7 +20,7 @@ export default function SettingsPage() {
     <div className="animate-in flex flex-col gap-5 pb-8">
       <div>
         <h2 className="page-title">Configurações</h2>
-        <p className="page-subtitle">Configurações e segurança da conta.</p>
+        <p className="page-subtitle">Conta, aparência e segurança.</p>
       </div>
 
       {/* Dados Pessoais */}
@@ -41,7 +41,7 @@ export default function SettingsPage() {
           <div>
             <h3 className="font-bold text-lg m-0" style={{ color: "var(--text-primary)" }}>{user?.name || "Usuário"}</h3>
             <p className="text-sm m-0 mt-0.5" style={{ color: "var(--text-secondary)" }}>{user?.email}</p>
-            <span className="badge badge-green mt-2 inline-flex">
+            <span className="badge badge-navy mt-2 inline-flex">
               {roleLabels[user?.role] || user?.role || "Indisponível"}
             </span>
           </div>
@@ -55,14 +55,14 @@ export default function SettingsPage() {
             <SettingsLink
               href="/configuracoes/usuarios"
               icon={<Users className="w-5 h-5" />}
-              iconBg="bg-blue-50 text-blue-600"
+              iconStyle={{ background: "color-mix(in srgb, var(--color-primary) 10%, transparent)", color: "var(--color-primary)" }}
               title="Usuários e Convites"
-              desc="Gerenciar acessos ao sistema"
+              desc="Gerenciar acessos"
             />
             <SettingsLink
               href="/configuracoes/locais"
               icon={<MapPin className="w-5 h-5" />}
-              iconBg="bg-green-50 text-green-700"
+              iconStyle={{ background: "color-mix(in srgb, var(--color-success) 10%, transparent)", color: "var(--color-success)" }}
               title="Localizações Físicas"
               desc="Armários, mostruários e grupos"
             />
@@ -74,7 +74,7 @@ export default function SettingsPage() {
         </div>
         <SettingsButton
           icon={<BellRing className="w-5 h-5" />}
-          iconBg="bg-sky-50 text-sky-600"
+          iconStyle={{ background: "color-mix(in srgb, var(--color-primary) 10%, transparent)", color: "var(--color-primary)" }}
           title="Notificações"
           desc="Alertas de estoque baixo"
         />
@@ -82,7 +82,7 @@ export default function SettingsPage() {
 
       {/* PWA & Logout */}
       <div className="flex flex-col gap-3 mt-2">
-        <div className="card p-4 flex gap-3 items-start" style={{ borderColor: "rgba(30,58,95,0.2)", background: "rgba(30,58,95,0.04)" }}>
+        <div className="card p-4 flex gap-3 items-start" style={{ borderColor: "color-mix(in srgb, var(--color-primary) 20%, transparent)", background: "color-mix(in srgb, var(--color-primary) 5%, transparent)" }}>
           <Smartphone className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: "var(--color-primary)" }} />
           <div>
             <p className="text-sm font-bold m-0" style={{ color: "var(--color-primary)" }}>App Offline (PWA)</p>
@@ -104,15 +104,12 @@ export default function SettingsPage() {
   )
 }
 
-function SettingsLink({ href, icon, iconBg, title, desc }: {
-  href: string; icon: React.ReactNode; iconBg: string; title: string; desc: string
+function SettingsLink({ href, icon, iconStyle, title, desc }: {
+  href: string; icon: React.ReactNode; iconStyle: React.CSSProperties; title: string; desc: string
 }) {
   return (
-    <Link
-      href={href}
-      className="no-underline card p-4 flex items-center gap-4 active:scale-[0.98] transition-transform"
-    >
-      <div className={`w-10 h-10 rounded-md ${iconBg} flex items-center justify-center flex-shrink-0`}>
+    <Link href={href} className="no-underline card p-4 flex items-center gap-4">
+      <div className="w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0" style={iconStyle}>
         {icon}
       </div>
       <div>
@@ -123,12 +120,12 @@ function SettingsLink({ href, icon, iconBg, title, desc }: {
   )
 }
 
-function SettingsButton({ icon, iconBg, title, desc }: {
-  icon: React.ReactNode; iconBg: string; title: string; desc: string
+function SettingsButton({ icon, iconStyle, title, desc }: {
+  icon: React.ReactNode; iconStyle: React.CSSProperties; title: string; desc: string
 }) {
   return (
-    <button className="card p-4 flex items-center gap-4 text-left cursor-pointer active:scale-[0.98] transition-transform border-none w-full" style={{ background: "var(--surface-card)" }}>
-      <div className={`w-10 h-10 rounded-md ${iconBg} flex items-center justify-center flex-shrink-0`}>
+    <button className="card p-4 flex items-center gap-4 text-left cursor-pointer border-none w-full" style={{ background: "var(--surface-card)" }}>
+      <div className="w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0" style={iconStyle}>
         {icon}
       </div>
       <div>
