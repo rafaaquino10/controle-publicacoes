@@ -104,10 +104,7 @@ export default function CatalogoPage() {
     <div className="animate-in flex flex-col gap-5">
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="page-title flex items-center gap-2">
-            <BookOpen className="w-6 h-6" style={{ color: "var(--color-primary)" }} />
-            Catálogo
-          </h2>
+          <h2 className="page-title">Catálogo</h2>
           <p className="page-subtitle">{items.length} publicações cadastradas</p>
         </div>
         {isSS && (
@@ -212,7 +209,7 @@ export default function CatalogoPage() {
       )}
 
       {/* Lista de Itens */}
-      <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {items.map((item) => (
           <div key={item.id} className="card p-3 flex gap-3 items-center">
             <ItemImage src={item.imageUrl} alt={item.title} pubCode={item.pubCode} langCode={item.langCode} />
@@ -222,7 +219,7 @@ export default function CatalogoPage() {
                 <span className="badge badge-slate">{item.pubCode}</span>
                 <span className="badge badge-slate">{item.langCode}</span>
                 {item.format !== "NORMAL" && (
-                  <span className="badge badge-blue">{formatLabels[item.format] || item.format}</span>
+                  <span className="badge badge-navy">{formatLabels[item.format] || item.format}</span>
                 )}
                 {item.isSpecialOrder && (
                   <span className="badge badge-amber">Especial</span>
