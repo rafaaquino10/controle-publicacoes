@@ -137,11 +137,11 @@ async function main() {
   // ─── 4. Catálogo ─────────────────────────────────────
   // qty: estoque atual, avg: consumo médio mensal (simulado)
   const rawItems = [
-    { code: 'nwt', lang: 'T', cat: 'Biblias', format: 'NORMAL', title: 'Traducao do Novo Mundo da Biblia Sagrada', spc: false, ord: true, loc: 'loc-arm-e1', qty: 12, avg: 4 },
-    { code: 'nwtpkt', lang: 'T', cat: 'Biblias', format: 'NORMAL', title: 'Traducao do Novo Mundo da Biblia Sagrada - Edicao de Bolso', spc: false, ord: true, loc: 'loc-arm-e1', qty: 3, avg: 5 },
-    { code: 'nwtls', lang: 'T', cat: 'Biblias', format: 'LARGE_PRINT', title: 'Traducao do Novo Mundo da Biblia Sagrada - Letra Grande', spc: true, ord: true, loc: 'loc-arm-e1', qty: 0, avg: 1 },
-    { code: 'nwt-1', lang: 'T', cat: 'Biblias', format: 'BRAILLE', title: 'Traducao do Novo Mundo - Braille Vol. 1', spc: false, ord: true, loc: 'loc-arm-e3', qty: 1, avg: 0 },
-    { code: 'nwt-2', lang: 'T', cat: 'Biblias', format: 'BRAILLE', title: 'Traducao do Novo Mundo - Braille Vol. 2', spc: false, ord: true, loc: 'loc-arm-e3', qty: 0, avg: 0 },
+    { code: 'nwt', lang: 'T', cat: 'Bíblias', format: 'NORMAL', title: 'Tradução do Novo Mundo da Bíblia Sagrada', spc: false, ord: true, loc: 'loc-arm-e1', qty: 12, avg: 4 },
+    { code: 'nwtpkt', lang: 'T', cat: 'Bíblias', format: 'NORMAL', title: 'Tradução do Novo Mundo — Edição de Bolso', spc: false, ord: true, loc: 'loc-arm-e1', qty: 3, avg: 5 },
+    { code: 'nwtls', lang: 'T', cat: 'Bíblias', format: 'LARGE_PRINT', title: 'Tradução do Novo Mundo — Letra Grande', spc: true, ord: true, loc: 'loc-arm-e1', qty: 0, avg: 1 },
+    { code: 'nwt-1', lang: 'T', cat: 'Bíblias', format: 'BRAILLE', title: 'Tradução do Novo Mundo — Braille Vol. 1', spc: false, ord: true, loc: 'loc-arm-e3', qty: 1, avg: 0 },
+    { code: 'nwt-2', lang: 'T', cat: 'Bíblias', format: 'BRAILLE', title: 'Tradução do Novo Mundo — Braille Vol. 2', spc: false, ord: true, loc: 'loc-arm-e3', qty: 0, avg: 0 },
 
     { code: 'jwcd9', lang: 'T', cat: 'Kit de Ferramentas', format: 'NORMAL', title: 'Cartão curso bíblico — presencial', spc: false, ord: true, loc: 'loc-arm-d1', qty: 30, avg: 12 },
     { code: 'jwcd10', lang: 'T', cat: 'Kit de Ferramentas', format: 'NORMAL', title: 'Cartão curso bíblico — virtual', spc: false, ord: true, loc: 'loc-arm-d1', qty: 8, avg: 10 },
