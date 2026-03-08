@@ -61,9 +61,9 @@ export async function searchItems(query: string) {
     return await prisma.item.findMany({
       where: {
         OR: [
-          { title: { contains: query } },
-          { pubCode: { contains: query } },
-          { categoryTags: { contains: query } },
+          { title: { contains: query, mode: "insensitive" } },
+          { pubCode: { contains: query, mode: "insensitive" } },
+          { categoryTags: { contains: query, mode: "insensitive" } },
         ],
       },
       include: { defaultLocation: true },

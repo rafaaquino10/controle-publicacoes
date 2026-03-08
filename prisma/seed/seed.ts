@@ -416,6 +416,12 @@ async function main() {
   console.log('Movimentações criadas (3 meses)')
 
   // ─── 6. Remessa Pendente ─────────────────────────────
+  const existingOrder = await prisma.order.findUnique({ where: { shipmentNumber: '7845321' } })
+  if (existingOrder) {
+    console.log('Remessa pendente já existe, pulando...')
+    console.log('Seed concluído com sucesso!')
+    return
+  }
   const order = await prisma.order.create({
     data: {
       shipmentNumber: '7845321',
