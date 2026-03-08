@@ -35,14 +35,14 @@ export function parseLabelText(text: string): LabelData {
     result.boxInfo = `Caixa ${result.boxNumber} de ${result.totalBoxes}`
   }
 
-  // Quantidade: número entre colchetes [1440]
-  const qtyMatch = text.match(/\[(\d+)\]/)
+  // Quantidade: número entre colchetes [1440] — tolerante a espaços e OCR
+  const qtyMatch = text.match(/\[\s*(\d+)\s*\]/)
   if (qtyMatch) {
     result.quantity = parseInt(qtyMatch[1])
   }
 
-  // Publicação: "mi26-T", "w24.01-T", etc.
-  const pubMatch = text.match(/\b([a-zA-Z]+\d*(?:\.\d+)?)-([A-Z])\b/)
+  // Publicação: "mi26-T", "w24.01-T", etc. — tolerante a em-dash, espaço extra
+  const pubMatch = text.match(/\b([a-zA-Z]+\d*(?:\.\d+)?)\s*[-—–]\s*([A-Z])\b/)
   if (pubMatch) {
     result.pubCode = pubMatch[1]
     result.langCode = pubMatch[2]
@@ -60,4 +60,30 @@ export function parseLabelText(text: string): LabelData {
   }
 
   return result
+}
+
+/** Merge results from two OCR passes, picking the best field from each */
+export function mergeLabelData(normal: LabelData, rotated: LabelData): LabelData {
+  const merged: LabelData = {
+    shipmentNumber: normal.shipmentNumber ?? rotated.shipmentNumber,
+    boxInfo: normal.boxInfo ?? rotated.boxInfo,
+    boxNumber: normal.boxNumber ?? rotated.boxNumber,
+    totalBoxes: normal.totalBoxes ?? rotated.totalBoxes,
+    quantity: normal.quantity ?? rotated.quantity,
+    pubCode: normal.pubCode ?? rotated.pubCode,
+    langCode: normal.langCode ?? rotated.langCode,
+    confidence: "none",
+  }
+
+  const hasShipment = merged.shipmentNumber !== null
+  const hasPub = merged.pubCode !== null
+  const hasQty = merged.quantity !== null
+
+  if (hasShipment && hasPub && hasQty) {
+    merged.confidence = "full"
+  } else if (hasShipment || hasPub || hasQty) {
+    merged.confidence = "partial"
+  }
+
+  return merged
 }

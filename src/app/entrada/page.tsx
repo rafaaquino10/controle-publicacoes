@@ -272,7 +272,7 @@ export default function EntradaPage() {
           <h2 className="page-title">Registro de Entrada</h2>
           <p className="page-subtitle m-0">
             {mode === "CHOOSE" && "Como deseja registrar?"}
-            {mode === "SCAN" && scanState === "SCANNING" && "Fotografe a etiqueta da caixa"}
+            {mode === "SCAN" && scanState === "SCANNING" && "Aponte para a etiqueta da caixa"}
             {mode === "SCAN" && scanState === "CONFIRM" && "Confira os dados e confirme"}
             {mode === "SCAN" && scanState === "QUICK_ENTRY" && "Remessa não encontrada"}
             {mode === "SCAN" && scanState === "SUCCESS" && ""}
