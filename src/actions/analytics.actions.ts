@@ -113,6 +113,42 @@ export async function getPendingShipmentsCount(congregationId: string) {
   }
 }
 
+export async function getRecentActivity(congregationId: string, limit: number = 8) {
+  try {
+    return await prisma.stockMovement.findMany({
+      where: { congregationId },
+      orderBy: { timestamp: "desc" },
+      take: limit,
+      include: {
+        item: { select: { id: true, title: true, pubCode: true, langCode: true, imageUrl: true } },
+        user: { select: { name: true } },
+      },
+    })
+  } catch (error) {
+    console.error("Erro ao buscar atividade recente:", error)
+    return []
+  }
+}
+
+export async function getPendingShipments(congregationId: string, limit: number = 3) {
+  try {
+    return await prisma.order.findMany({
+      where: {
+        creatorCongregationId: congregationId,
+        status: { in: ["PENDING", "IN_TRANSIT"] },
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      include: {
+        _count: { select: { boxes: true } },
+      },
+    })
+  } catch (error) {
+    console.error("Erro ao buscar remessas pendentes:", error)
+    return []
+  }
+}
+
 export async function getMonthlyConsumptionHistory(
   congregationId: string,
   months: number = 6

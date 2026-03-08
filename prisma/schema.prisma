@@ -1,0 +1,265 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Congregacao ─────────────────────────────────────────────
+model Congregation {
+  id            String   @id @default(cuid())
+  name          String
+  language      String   // Codigo principal: "T" (pt), "E" (en), etc.
+  isCoordinator Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  users            User[]
+  orders           Order[]
+  stockMovements   StockMovement[]
+  inventory        Inventory[]
+  locations        Location[]
+  invites          Invite[]
+  monthlyReports   MonthlyReport[]
+  specialRequests  SpecialRequest[]
+}
+
+// ─── Usuario ─────────────────────────────────────────────────
+// Role: "SS" | "SERVO" | "HELPER"
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  image          String?
+  passwordHash   String?
+  role           String    @default("HELPER")
+  isActive       Boolean   @default(true)
+  congregationId String?
+  invitedById    String?
+
+  congregation   Congregation?   @relation(fields: [congregationId], references: [id])
+  invitedBy      User?           @relation("InvitedByUser", fields: [invitedById], references: [id])
+  invitees       User[]          @relation("InvitedByUser")
+  accounts       Account[]
+  sessions       Session[]
+  stockMovements StockMovement[]
+  invitesCreated Invite[]        @relation("InviteCreator")
+  reportsGenerated MonthlyReport[] @relation("ReportGenerator")
+  specialRequests  SpecialRequest[] @relation("RequestRegistrar")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Convites ────────────────────────────────────────────────
+model Invite {
+  id             String    @id @default(cuid())
+  token          String    @unique
+  role           String    @default("HELPER") // "SS" | "SERVO" | "HELPER"
+  congregationId String
+  expiresAt      DateTime
+  usedAt         DateTime?
+  usedByEmail    String?
+
+  congregation Congregation @relation(fields: [congregationId], references: [id])
+  createdById  String
+  createdBy    User         @relation("InviteCreator", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// ─── Localizacoes Fisicas ────────────────────────────────────
+// SubStockType: "ARMARIO" | "MOSTRUARIO" | "GRUPO_CAMPO"
+model Location {
+  id             String  @id @default(cuid())
+  name           String
+  description    String?
+  labelCode      String? // e.g. "F-E1", "T-D3"
+  imageUrl       String? // foto do local fisico
+  subStockType   String  @default("ARMARIO")
+  congregationId String
+
+  congregation Congregation @relation(fields: [congregationId], references: [id])
+  items        Item[]       @relation("DefaultLocation")
+  inventory    Inventory[]
+
+  @@unique([labelCode, congregationId])
+}
+
+// ─── Catalogo de Publicacoes ─────────────────────────────────
+model Item {
+  id             String  @id // e.g. "lffi-T|pt-br|NORMAL"
+  pubCode        String
+  langCode       String
+  format         String  // NORMAL, LARGE_PRINT, BRAILLE
+  title          String
+  categoryTags   String  // JSON string ou comma-separated
+  isSpecialOrder Boolean @default(false)
+  isOrderable    Boolean @default(true)
+  imageUrl       String?
+  defaultLocationId String?
+
+  defaultLocation     Location?       @relation("DefaultLocation", fields: [defaultLocationId], references: [id])
+  orderItems          OrderItem[]
+  stockMovements      StockMovement[]
+  inventory           Inventory[]
+  specialRequestItems SpecialRequestItem[]
+}
+
+// ─── Remessas (Orders) ───────────────────────────────────────
+// OrderStatus: "PENDING" | "IN_TRANSIT" | "RECEIVED"
+model Order {
+  id                    String   @id @default(cuid())
+  shipmentNumber        String   @unique // Numero da nota de envio
+  type                  String   // COMMON, SPECIAL
+  creatorCongregationId String
+  status                String   @default("PENDING")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  creatorCongregation Congregation @relation(fields: [creatorCongregationId], references: [id])
+  boxes               OrderBox[]
+}
+
+model OrderBox {
+  id         String  @id @default(cuid())
+  orderId    String
+  boxNumber  String  // e.g. "Caixa 1 de 2"
+  isReceived Boolean @default(false)
+
+  order Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  items OrderItem[]
+}
+
+model OrderItem {
+  id                        String  @id @default(cuid())
+  orderBoxId                String
+  itemId                    String
+  quantity                  Int
+  destinationCongregationId String?
+
+  orderBox OrderBox @relation(fields: [orderBoxId], references: [id], onDelete: Cascade)
+  item     Item     @relation(fields: [itemId], references: [id])
+}
+
+// ─── Movimentacoes de Estoque ────────────────────────────────
+// MovementType: "RECEIVE_SHIPMENT" | "ISSUE_PUBLISHER" | "ISSUE_GROUP" | "TRANSFER_DISPLAY" | "TRANSFER_IN" | "ADJUSTMENT" | "COUNT_CORRECTION"
+model StockMovement {
+  id             String   @id @default(cuid())
+  itemId         String
+  congregationId String
+  userId         String
+  locationId     String?
+  type           String   // MovementType
+  quantity       Int      // positivo = entrada, negativo = saida
+  notes          String?
+  timestamp      DateTime @default(now())
+
+  item         Item         @relation(fields: [itemId], references: [id])
+  congregation Congregation @relation(fields: [congregationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+}
+
+// ─── Inventario (saldo por item x congregacao x local) ───────
+model Inventory {
+  id                        String  @id @default(cuid())
+  itemId                    String
+  congregationId            String
+  locationId                String?
+  currentQuantity           Int     @default(0)
+  minStock                  Int     @default(0)
+  averageMonthlyConsumption Float   @default(0)
+
+  item         Item          @relation(fields: [itemId], references: [id])
+  congregation Congregation  @relation(fields: [congregationId], references: [id])
+  location     Location?     @relation(fields: [locationId], references: [id])
+
+  @@unique([itemId, congregationId, locationId])
+}
+
+// ─── Relatorio Mensal ────────────────────────────────────────
+// ReportStatus: "DRAFT" | "FINAL"
+model MonthlyReport {
+  id             String   @id @default(cuid())
+  period         String   // "2026-03" formato YYYY-MM
+  congregationId String
+  langCode       String   // "T", "E", etc.
+  status         String   @default("DRAFT")
+  data           String?  // JSON com snapshot do inventario
+  pdfUrl         String?
+  generatedById  String
+
+  congregation Congregation @relation(fields: [congregationId], references: [id])
+  generatedBy  User         @relation("ReportGenerator", fields: [generatedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([period, congregationId, langCode])
+}
+
+// ─── Pedidos Nominais (solicitações individuais) ─────────────
+// Status: "PENDING" | "ORDERED" | "DELIVERED"
+model SpecialRequest {
+  id             String   @id @default(cuid())
+  personName     String   // Nome do publicador
+  congregationId String
+  registeredById String
+  status         String   @default("PENDING")
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  congregation Congregation @relation(fields: [congregationId], references: [id])
+  registeredBy User         @relation("RequestRegistrar", fields: [registeredById], references: [id])
+  items        SpecialRequestItem[]
+}
+
+model SpecialRequestItem {
+  id        String @id @default(cuid())
+  requestId String
+  itemId    String
+  quantity  Int    @default(1)
+
+  request SpecialRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  item    Item           @relation(fields: [itemId], references: [id])
+}
+
+// ─── NextAuth Models ─────────────────────────────────────────
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

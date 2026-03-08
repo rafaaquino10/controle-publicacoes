@@ -1,14 +1,15 @@
 import { requireAuth } from "@/lib/auth-utils"
 import { getItemDetail, getItemMonthlyConsumption, getItemMovementHistory } from "@/actions/item-detail.actions"
 import ItemImage from "@/components/ItemImage"
+import Breadcrumb from "@/components/Breadcrumb"
 import Link from "next/link"
-import { ArrowLeft, ArrowUpRight, Package, MapPin, ArrowDownLeft } from "lucide-react"
+import { ArrowUpRight, Package, MapPin, ArrowDownLeft } from "lucide-react"
 
 const typeLabels: Record<string, string> = {
   RECEIVE_SHIPMENT:  "Entrada (remessa)",
   ISSUE_PUBLISHER:   "Saída (publicadores)",
   ISSUE_GROUP:       "Saída (grupo)",
-  TRANSFER_DISPLAY:  "Transferência (mostruário)",
+  ISSUE_CART:        "Saída (carrinho)",
   TRANSFER_IN:       "Transferência (entrada)",
   ADJUSTMENT:        "Ajuste",
   COUNT_CORRECTION:  "Correção de contagem",
@@ -52,17 +53,14 @@ export default async function ItemDetailPage({
   const { item, inventory, totalQuantity, avgConsumption } = detail
   const hasConsumption = consumption.length > 0 && consumption.some((c) => c.total > 0)
   const maxConsumption = Math.max(...consumption.map((c) => c.total), 1)
+  const encodedItemId = encodeURIComponent(item.id)
 
   return (
     <div className="animate-in flex flex-col gap-5">
-      {/* Botão voltar */}
-      <Link
-        href="/estoque"
-        className="no-underline flex items-center gap-1.5 text-sm font-semibold"
-        style={{ color: "var(--text-secondary)" }}
-      >
-        <ArrowLeft className="w-4 h-4" /> Voltar ao Estoque
-      </Link>
+      <Breadcrumb items={[
+        { label: "Estoque", href: "/estoque" },
+        { label: item.title },
+      ]} />
 
       {/* Header: imagem + info */}
       <div className="flex flex-col md:flex-row gap-5">
@@ -88,27 +86,34 @@ export default async function ItemDetailPage({
             {item.isSpecialOrder && <span className="badge badge-amber">Especial</span>}
           </div>
 
-          {/* Total em estoque */}
-          <div className="mt-4">
-            <p className="text-xs font-semibold mb-1 m-0" style={{ color: "var(--text-muted)" }}>
-              Total em Estoque
-            </p>
-            <p className="text-3xl font-bold m-0" style={{ color: "var(--text-primary)" }}>
-              {totalQuantity}
-            </p>
-            {avgConsumption > 0 && (
-              <p className="text-xs mt-1 m-0" style={{ color: "var(--text-muted)" }}>
-                Média: {avgConsumption}/mês
+          {/* Informações de estoque */}
+          <div className="grid grid-cols-2 gap-3 mt-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wide mb-0.5 m-0" style={{ color: "var(--text-muted)" }}>
+                Total em Estoque
               </p>
+              <p className="text-3xl font-bold m-0" style={{ color: "var(--text-primary)" }}>
+                {totalQuantity}
+              </p>
+            </div>
+            {avgConsumption > 0 && (
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wide mb-0.5 m-0" style={{ color: "var(--text-muted)" }}>
+                  Consumo Mensal
+                </p>
+                <p className="text-3xl font-bold m-0" style={{ color: "var(--text-secondary)" }}>
+                  {avgConsumption}
+                </p>
+              </div>
             )}
           </div>
 
-          {/* Botões de ação */}
+          {/* Botões de ação — pre-preenchem o item */}
           <div className="flex gap-2 mt-4">
-            <Link href="/entrada" className="no-underline btn btn-primary btn-sm">
-              <Package className="w-4 h-4" /> Dar Entrada
+            <Link href={`/entrada?item=${encodedItemId}`} className="no-underline btn btn-primary btn-sm">
+              <ArrowDownLeft className="w-4 h-4" /> Dar Entrada
             </Link>
-            <Link href="/saida" className="no-underline btn btn-danger btn-sm">
+            <Link href={`/saida?item=${encodedItemId}`} className="no-underline btn btn-danger btn-sm">
               <ArrowUpRight className="w-4 h-4" /> Registrar Saída
             </Link>
           </div>
@@ -117,19 +122,38 @@ export default async function ItemDetailPage({
 
       {/* Estoque por local */}
       <div className="card p-4">
-        <h3 className="section-label mb-3">Estoque por Local</h3>
+        <h3 className="section-label mb-1">Estoque por Local</h3>
+        <p style={{ fontSize: 11, margin: "0 0 10px", color: "var(--text-muted)" }}>
+          B1/B2 = Balcão frente/trás · LE/LD = Lado esq./dir. · P1/P2/P3 = Prateleira cima/meio/baixo
+        </p>
         <div className="flex flex-col gap-2">
           {inventory.map((inv) => (
-            <div key={inv.id} className="flex items-center justify-between py-1.5">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
-                <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
-                  {inv.location?.labelCode || inv.location?.name || "Geral"}
+            <div key={inv.id} style={{ borderRadius: 8, border: "1px solid var(--border-color)", overflow: "hidden" }}>
+              <div className="flex items-center justify-between" style={{ padding: "10px 12px" }}>
+                <div className="flex items-center gap-2.5" style={{ minWidth: 0 }}>
+                  <MapPin className="w-4 h-4 flex-shrink-0" style={{ color: "var(--color-primary)" }} />
+                  <div style={{ minWidth: 0 }}>
+                    <p className="text-sm font-semibold m-0" style={{ color: "var(--text-primary)" }}>
+                      {inv.location?.name || "Geral"}
+                    </p>
+                    {inv.location?.description && (
+                      <p className="text-[11px] m-0 mt-0.5" style={{ color: "var(--text-muted)" }}>
+                        {inv.location.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <span className="text-lg font-bold flex-shrink-0 ml-3" style={{ color: "var(--text-primary)" }}>
+                  {inv.currentQuantity}
                 </span>
               </div>
-              <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
-                {inv.currentQuantity}
-              </span>
+              {inv.location?.imageUrl && (
+                <img
+                  src={inv.location.imageUrl}
+                  alt={inv.location.name}
+                  style={{ width: "100%", height: 120, objectFit: "cover", borderTop: "1px solid var(--border-color)" }}
+                />
+              )}
             </div>
           ))}
           {inventory.length === 0 && (

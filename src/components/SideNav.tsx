@@ -2,20 +2,25 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Package, ScanLine, ArrowUpRight, FileText, Settings } from "lucide-react"
+import { Home, Package, ArrowDownLeft, ArrowUpRight, FileText, Settings, ClipboardList, BookOpen, Truck } from "lucide-react"
+import ThemeToggleCompact from "./ThemeToggleCompact"
 
 type NavItem = {
   href: string
   icon: typeof Home
   label: string
+  ssOnly?: boolean
 }
 
 const navItems: NavItem[] = [
   { href: "/",              icon: Home,         label: "Início"         },
   { href: "/estoque",       icon: Package,      label: "Estoque"        },
-  { href: "/entrada",       icon: ScanLine,     label: "Entrada"        },
+  { href: "/catalogo",      icon: BookOpen,     label: "Catálogo",      ssOnly: true },
+  { href: "/entrada",       icon: ArrowDownLeft, label: "Entrada"        },
+  { href: "/remessas",      icon: Truck,        label: "Remessas"       },
   { href: "/saida",         icon: ArrowUpRight, label: "Saída"          },
-  { href: "/relatorios",    icon: FileText,     label: "Relatório"      },
+  { href: "/pedidos-nominais", icon: ClipboardList, label: "Pedidos Nominais" },
+  { href: "/relatorios",    icon: FileText,     label: "Relatório",     ssOnly: true },
   { href: "/configuracoes", icon: Settings,     label: "Configurações"  },
 ]
 
@@ -43,16 +48,16 @@ export default function SideNav({
       {/* Logo */}
       <div style={{ padding: "20px" }}>
         <div style={{ fontWeight: 700, fontSize: "15px", color: "var(--text-primary)" }}>
-          Vila Yara
+          Controle de Publicações
         </div>
         <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "2px" }}>
-          Gestão de Publicações
+          Vila Yara
         </div>
       </div>
 
       {/* Nav Links */}
       <nav className="flex-1 flex flex-col" style={{ padding: "8px 12px", gap: "2px" }}>
-        {navItems.map((item) => {
+        {navItems.filter(item => !item.ssOnly || isSS).map((item) => {
           const Icon = item.icon
           const active = isActive(item.href)
           return (
@@ -82,7 +87,7 @@ export default function SideNav({
       {/* User footer */}
       <div
         className="flex items-center gap-3 border-t"
-        style={{ padding: "16px", borderColor: "var(--border-color)" }}
+        style={{ padding: "12px 16px", borderColor: "var(--border-color)" }}
       >
         {userImage ? (
           <img
@@ -104,6 +109,7 @@ export default function SideNav({
           </p>
           {isSS && <span className="badge badge-navy">SS</span>}
         </div>
+        <ThemeToggleCompact />
       </div>
     </aside>
   )

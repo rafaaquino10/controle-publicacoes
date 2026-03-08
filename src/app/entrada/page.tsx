@@ -89,18 +89,22 @@ export default function EntradaPage() {
       <div className="md:hidden">
         <SmartScanner onScanSuccess={handleScan} onShipmentDetected={handleShipmentDetected} />
       </div>
+
+      {/* Desktop: show manual forms expanded */}
       <div className="hidden md:block">
-        <div className="card p-6 text-center" style={{ color: "var(--text-muted)" }}>
-          <p className="text-sm font-medium m-0">Use o celular para escanear códigos de barras</p>
-          <p className="text-xs mt-1 m-0">Ou utilize as opções manuais abaixo</p>
+        <div className="divider">
+          <span>Opções de Registro</span>
         </div>
       </div>
 
-      <div className="divider">
-        <span>Opções Manuais</span>
+      {/* Mobile: show option cards */}
+      <div className="md:hidden">
+        <div className="divider">
+          <span>Opções Manuais</span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 md:hidden">
         <button
           onClick={() => { setShowManualInput(true); setShowNewOrderForm(false) }}
           className="card p-5 flex flex-col items-center gap-3 cursor-pointer active:scale-95 transition-transform border-none"
@@ -128,12 +132,11 @@ export default function EntradaPage() {
         </button>
       </div>
 
-      {/* Busca Manual */}
-      {showManualInput && (
-        <form
-          onSubmit={handleManualSearch}
-          className="card p-4 flex flex-col gap-3 animate-in"
-        >
+      {/* Busca Manual — always visible on desktop, toggle on mobile */}
+      <form
+        onSubmit={handleManualSearch}
+        className={`card p-4 flex flex-col gap-3 animate-in ${showManualInput ? "" : "hidden md:flex md:flex-col"}`}
+      >
           <h3 className="text-sm font-bold m-0 flex items-center gap-1.5" style={{ color: "var(--text-primary)" }}>
             <Search className="w-4 h-4" />
             Buscar Remessa por Número
@@ -169,8 +172,7 @@ export default function EntradaPage() {
               </button>
             </div>
           )}
-        </form>
-      )}
+      </form>
 
       {/* Formulário de Nova Remessa */}
       {showNewOrderForm && (

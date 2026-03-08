@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useTransition } from "react"
 import { useSession } from "next-auth/react"
-import { Search, CheckCircle2, Package, Users, MapPin } from "lucide-react"
-import { searchItems } from "@/actions/item.actions"
+import { useSearchParams } from "next/navigation"
+import { Search, CheckCircle2, Users, MapPin, ShoppingCart, Clock } from "lucide-react"
+import { searchItems, getItemById } from "@/actions/item.actions"
+import { getRecentItems, addRecentItem, type RecentItem } from "@/lib/recent-items"
 import { getLocations } from "@/actions/location.actions"
 import { registerStockOut } from "@/actions/inventory.actions"
 import ItemImage from "@/components/ItemImage"
@@ -25,11 +27,13 @@ type LocationResult = {
   subStockType: SubStockType
 }
 
-type DestinationType = "PUBLICADORES" | "GRUPO_CAMPO" | "MOSTRUARIO"
+type DestinationType = "PUBLICADORES" | "GRUPO_CAMPO" | "CARRINHO"
 
 export default function SaidaPage() {
   const { data: session } = useSession()
   const user = session?.user as any
+  const params = useSearchParams()
+  const preselectedItemId = params.get("item")
 
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<ItemResult[]>([])
@@ -41,12 +45,38 @@ export default function SaidaPage() {
   const [isPending, startTransition] = useTransition()
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState("")
+  const [recentItems, setRecentItems] = useState<RecentItem[]>([])
 
+  // Load recent items
+  useEffect(() => {
+    setRecentItems(getRecentItems())
+  }, [])
+
+  // Load locations
   useEffect(() => {
     if (user?.congregationId) {
       getLocations(user.congregationId).then((locs) => setLocations(locs as LocationResult[]))
     }
   }, [user?.congregationId])
+
+  // Pre-select item from query param
+  useEffect(() => {
+    if (preselectedItemId && !selectedItem) {
+      getItemById(preselectedItemId).then((item) => {
+        if (item) {
+          const mapped: ItemResult = {
+            id: item.id,
+            pubCode: item.pubCode,
+            langCode: item.langCode,
+            title: item.title,
+            imageUrl: item.imageUrl,
+            defaultLocationId: item.defaultLocationId,
+          }
+          handleSelectItem(mapped)
+        }
+      })
+    }
+  }, [preselectedItemId])
 
   async function handleSearch(q: string) {
     setQuery(q)
@@ -75,7 +105,7 @@ export default function SaidaPage() {
       const typeMap: Record<DestinationType, MovementType> = {
         PUBLICADORES: "ISSUE_PUBLISHER",
         GRUPO_CAMPO: "ISSUE_GROUP",
-        MOSTRUARIO: "TRANSFER_DISPLAY",
+        CARRINHO: "ISSUE_CART",
       }
       const result = await registerStockOut({
         itemId: selectedItem.id,
@@ -86,6 +116,8 @@ export default function SaidaPage() {
         type: typeMap[destination],
       })
       if (result.success) {
+        addRecentItem({ id: selectedItem.id, title: selectedItem.title, pubCode: selectedItem.pubCode })
+        setRecentItems(getRecentItems())
         setSuccess(true)
         setTimeout(reset, 2000)
       } else {
@@ -105,9 +137,9 @@ export default function SaidaPage() {
   const armarios = locations.filter((l) => l.subStockType === "ARMARIO")
 
   const destOptions: Array<{ value: DestinationType; label: string; icon: typeof Users; color: string }> = [
-    { value: "PUBLICADORES", label: "Publicadores",   icon: Users,  color: "var(--color-primary)" },
-    { value: "GRUPO_CAMPO",  label: "Grupo de Campo", icon: MapPin, color: "var(--color-warning)" },
-    { value: "MOSTRUARIO",   label: "Mostruário",     icon: Package, color: "var(--color-success)" },
+    { value: "PUBLICADORES", label: "Publicadores",   icon: Users,        color: "var(--color-primary)" },
+    { value: "GRUPO_CAMPO",  label: "Grupo de Campo", icon: MapPin,       color: "var(--color-warn)" },
+    { value: "CARRINHO",     label: "Carrinho",        icon: ShoppingCart, color: "var(--color-success)" },
   ]
 
   return (
@@ -125,6 +157,40 @@ export default function SaidaPage() {
         </div>
       )}
 
+      {/* Recentes */}
+      {!success && recentItems.length > 0 && !selectedItem && (
+        <div>
+          <p className="flex items-center gap-1.5 m-0 mb-2" style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>
+            <Clock size={12} /> Recentes
+          </p>
+          <div className="flex gap-2 flex-wrap">
+            {recentItems.map((ri) => (
+              <button
+                key={ri.id}
+                type="button"
+                onClick={() => {
+                  getItemById(ri.id).then((item) => {
+                    if (item) handleSelectItem(item as ItemResult)
+                  })
+                }}
+                className="border cursor-pointer"
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: "20px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  background: "var(--surface-card)",
+                  borderColor: "var(--border-color)",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                {ri.pubCode}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {!success && (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* Busca de item */}
@@ -135,7 +201,8 @@ export default function SaidaPage() {
               placeholder="Buscar publicação..."
               value={query}
               onChange={(e) => handleSearch(e.target.value)}
-              className="input pl-10"
+              className="input"
+              style={{ paddingLeft: "2.5rem" }}
             />
             {results.length > 0 && (
               <div className="absolute top-full mt-1 left-0 right-0 z-50 rounded-md border shadow-md max-h-52 overflow-auto" style={{ background: "var(--surface-card)", borderColor: "var(--border-color)" }}>

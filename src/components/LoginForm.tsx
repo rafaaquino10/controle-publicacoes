@@ -38,7 +38,7 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="card p-8" style={{ boxShadow: "var(--shadow-sm)" }}>
+    <div className="card p-8" style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
       {/* Cabeçalho */}
       <div className="mb-8">
         <h1 style={{ fontSize: "20px", fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
@@ -107,7 +107,8 @@ export default function LoginForm() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="input pl-10"
+                  className="input"
+                  style={{ paddingLeft: "2.5rem" }}
                 />
               </div>
             </div>
@@ -121,7 +122,8 @@ export default function LoginForm() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="input pl-10 pr-10"
+                  className="input"
+                  style={{ paddingLeft: "2.5rem", paddingRight: "2.5rem" }}
                 />
                 <button
                   type="button"

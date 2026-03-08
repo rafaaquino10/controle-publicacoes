@@ -1,11 +1,12 @@
-import { ReactNode } from "react"
+import { ReactNode, Suspense } from "react"
 import { auth } from "@/lib/auth"
 import { SessionProvider } from "next-auth/react"
-import Link from "next/link"
 import { Inter } from "next/font/google"
 import BottomNav from "@/components/BottomNav"
 import SideNav from "@/components/SideNav"
+import MobileHeader from "@/components/MobileHeader"
 import ThemeProvider from "@/components/ThemeProvider"
+import PageTransition from "@/components/PageTransition"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -36,7 +37,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className={inter.className} style={{ margin: 0, background: "var(--surface-bg)", color: "var(--text-primary)" }}>
@@ -49,43 +50,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           <ThemeProvider>
             {/* Header mobile */}
             {isLogged && (
-              <header
-                className="sticky top-0 z-50 border-b md:hidden"
-                style={{
-                  background: "var(--surface-card)",
-                  borderColor: "var(--border-color)",
-                  height: "48px",
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "0 16px",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Link href="/" className="no-underline">
-                  <span style={{ fontWeight: 700, fontSize: "15px", color: "var(--text-primary)" }}>
-                    Vila Yara
-                  </span>
-                </Link>
-
-                <div className="flex items-center gap-2">
-                  {isSS && <span className="badge badge-navy">SS</span>}
-                  {user?.image ? (
-                    <img
-                      src={user.image}
-                      alt="Perfil"
-                      className="w-8 h-8 rounded-full object-cover"
-                      style={{ border: "1px solid var(--border-color)" }}
-                    />
-                  ) : (
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                      style={{ background: "var(--color-primary)" }}
-                    >
-                      {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                    </div>
-                  )}
-                </div>
-              </header>
+              <Suspense fallback={null}>
+                <MobileHeader isSS={isSS} userName={user?.name} userImage={user?.image} />
+              </Suspense>
             )}
 
             <div className="flex min-h-dvh">
@@ -94,7 +61,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               )}
 
               <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-4 pb-20 md:px-8 md:py-6 md:pb-6">
-                {children}
+                <PageTransition>
+                  {children}
+                </PageTransition>
               </main>
             </div>
 

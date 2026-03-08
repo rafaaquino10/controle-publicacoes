@@ -47,6 +47,15 @@ export async function getAllItems() {
   }
 }
 
+export async function getItemById(id: string) {
+  try {
+    return await prisma.item.findUnique({ where: { id } })
+  } catch (error) {
+    console.error("Erro ao buscar item:", error)
+    return null
+  }
+}
+
 export async function searchItems(query: string) {
   try {
     return await prisma.item.findMany({

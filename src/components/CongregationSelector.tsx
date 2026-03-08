@@ -35,23 +35,57 @@ export default function CongregationSelector({ defaultCongId }: { defaultCongId:
 
   if (congregations.length <= 1) return null
 
+  const currentCong = congregations.find((c) => c.id === current)
+
   return (
-    <div className="flex items-center gap-2">
-      <label className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-        Congregação
-      </label>
-      <select
-        value={current}
-        onChange={(e) => handleChange(e.target.value)}
-        className="select"
-        style={{ height: 36, fontSize: 13, maxWidth: 220 }}
+    <div
+      style={{
+        background: "color-mix(in srgb, var(--color-primary) 5%, var(--surface-card))",
+        border: "1px solid var(--border-color)",
+        borderRadius: 8,
+        padding: "10px 12px",
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+      }}
+    >
+      <div
+        style={{
+          width: 32, height: 32, borderRadius: 6, flexShrink: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "var(--color-primary)", color: "white",
+          fontSize: 13, fontWeight: 700,
+        }}
       >
-        {congregations.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name} ({c.language})
-          </option>
-        ))}
-      </select>
+        {currentCong?.name?.charAt(0) || "C"}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", margin: 0 }}>
+          Congregação
+        </p>
+        <select
+          value={current}
+          onChange={(e) => handleChange(e.target.value)}
+          style={{
+            width: "100%",
+            fontSize: 14,
+            fontWeight: 600,
+            color: "var(--text-primary)",
+            background: "transparent",
+            border: "none",
+            outline: "none",
+            padding: "2px 0 0",
+            cursor: "pointer",
+            appearance: "auto",
+          }}
+        >
+          {congregations.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </div>
     </div>
   )
 }

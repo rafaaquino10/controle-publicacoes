@@ -68,7 +68,19 @@ html, body {
   background: var(--surface-card);
   border-radius: 8px;
   border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-interactive {
+  background: var(--surface-card);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.card-interactive:hover {
   box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--color-primary) 25%, var(--border-color));
 }
 
 .card-compact {
@@ -76,6 +88,13 @@ html, body {
   border-radius: 6px;
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
+}
+
+/* Glass card (scanner overlay) */
+.glass-card {
+  background: #0f172a;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 /* ── Button Components ─────────────────────────── */
@@ -338,6 +357,38 @@ html, body {
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
+
+/* ── Quick Action Cards ────────────────────────── */
+.quick-action {
+  background: var(--surface-card);
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  padding: 16px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  text-decoration: none;
+  min-height: 100px;
+}
+.quick-action:hover {
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--color-primary) 30%, var(--border-color));
+}
+.quick-action:active { transform: scale(0.98); }
+
+.quick-action-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /* ── Utilities ─────────────────────────────────── */
 .no-underline { text-decoration: none; }

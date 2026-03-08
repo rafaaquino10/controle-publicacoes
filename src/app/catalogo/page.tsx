@@ -128,7 +128,8 @@ export default function CatalogoPage() {
           placeholder="Buscar por código, nome ou categoria..."
           value={query}
           onChange={(e) => handleSearch(e.target.value)}
-          className="input pl-10"
+          className="input"
+          style={{ paddingLeft: "2.5rem" }}
         />
       </div>
 
