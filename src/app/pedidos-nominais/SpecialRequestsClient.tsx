@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation"
 import { createSpecialRequest, updateSpecialRequestStatus, deleteSpecialRequest } from "@/actions/special-request.actions"
 import { Plus, Trash2, ChevronDown, ChevronUp, Search } from "lucide-react"
 import ItemImage from "@/components/ItemImage"
+import { Card, Button, Badge, EmptyState } from "@/components/ui"
+import { cn } from "@/lib/cn"
 
 type RequestItem = { id: string; title: string; pubCode: string; quantity: number }
 type Request = {
@@ -19,10 +21,10 @@ type Request = {
 }
 type ItemOption = { id: string; title: string; pubCode: string; category: string; langCode: string }
 
-const STATUS_LABEL: Record<string, { text: string; badge: string }> = {
-  PENDING: { text: "Pendente", badge: "badge-amber" },
-  ORDERED: { text: "Pedido feito", badge: "badge-navy" },
-  DELIVERED: { text: "Entregue", badge: "badge-green" },
+const STATUS_LABEL: Record<string, { text: string; variant: "amber" | "primary" | "green" }> = {
+  PENDING: { text: "Pendente", variant: "amber" },
+  ORDERED: { text: "Pedido feito", variant: "primary" },
+  DELIVERED: { text: "Entregue", variant: "green" },
 }
 
 export default function SpecialRequestsClient({
@@ -39,116 +41,113 @@ export default function SpecialRequestsClient({
 
   return (
     <>
-      {/* Filtros + botao novo */}
-      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+      {/* Filter pills + new button */}
+      <div className="flex gap-1.5 items-center flex-wrap">
         {["all", "PENDING", "ORDERED", "DELIVERED"].map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            style={{
-              padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600,
-              border: "1px solid var(--border-color)", cursor: "pointer",
-              background: filter === f ? "var(--color-primary)" : "var(--surface-card)",
-              color: filter === f ? "white" : "var(--text-secondary)",
-            }}
+            className={cn(
+              "px-3.5 py-1.5 rounded-full text-[12px] font-semibold border cursor-pointer whitespace-nowrap transition-colors duration-150",
+              filter === f
+                ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)]"
+                : "bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-color)]"
+            )}
           >
             {f === "all" ? `Todos (${requests.length})` : `${STATUS_LABEL[f].text} (${requests.filter((r) => r.status === f).length})`}
           </button>
         ))}
-        <button
+        <Button
           onClick={() => setShowForm(true)}
-          style={{
-            marginLeft: "auto", padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600,
-            background: "var(--color-primary)", color: "white", border: "none", cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 6,
-          }}
+          size="sm"
+          icon={<Plus size={16} />}
+          className="ml-auto"
         >
-          <Plus size={16} /> Novo Pedido
-        </button>
+          Novo Pedido
+        </Button>
       </div>
 
-      {/* Lista */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 16 }}>
+      {/* Request list */}
+      <div className="flex flex-col gap-2 pb-4">
         {filtered.map((req) => {
           const expanded = expandedId === req.id
           const st = STATUS_LABEL[req.status] || STATUS_LABEL.PENDING
           return (
-            <div key={req.id} className="card" style={{ overflow: "hidden" }}>
+            <Card key={req.id} variant="elevated" className="overflow-hidden">
               <button
                 onClick={() => setExpandedId(expanded ? null : req.id)}
-                style={{
-                  width: "100%", padding: "12px 14px", border: "none", cursor: "pointer",
-                  background: "transparent", display: "flex", alignItems: "center", gap: 10, textAlign: "left",
-                }}
+                className="w-full px-4 py-3 border-none cursor-pointer bg-transparent flex items-center gap-2.5 text-left"
               >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{req.personName}</span>
-                    <span className={`badge ${st.badge}`}>{st.text}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[14px] font-bold text-[var(--text-primary)]">{req.personName}</span>
+                    <Badge variant={st.variant}>{st.text}</Badge>
                   </div>
-                  <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "4px 0 0" }}>
+                  <p className="text-[11px] text-[var(--text-muted)] m-0 mt-1">
                     {new Date(req.createdAt).toLocaleDateString("pt-BR")} · {req.items.length} item(ns) · por {req.registeredBy}
                   </p>
                 </div>
-                {expanded ? <ChevronUp size={18} style={{ color: "var(--text-muted)", flexShrink: 0 }} /> : <ChevronDown size={18} style={{ color: "var(--text-muted)", flexShrink: 0 }} />}
+                {expanded
+                  ? <ChevronUp size={18} className="text-[var(--text-muted)] flex-shrink-0" />
+                  : <ChevronDown size={18} className="text-[var(--text-muted)] flex-shrink-0" />
+                }
               </button>
               {expanded && (
-                <div style={{ padding: "0 14px 14px", borderTop: "1px solid var(--border-color)" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
+                <div className="px-4 pb-4 border-t border-[var(--border-color)]">
+                  <div className="flex flex-col gap-1.5 mt-2.5">
                     {req.items.map((it) => (
-                      <div key={it.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--text-primary)" }}>
+                      <div key={it.id} className="flex justify-between text-[13px] text-[var(--text-primary)]">
                         <span>{it.title}</span>
-                        <span style={{ fontWeight: 600, flexShrink: 0, marginLeft: 8 }}>{"\u00d7"}{it.quantity}</span>
+                        <span className="font-semibold flex-shrink-0 ml-2">{"\u00d7"}{it.quantity}</span>
                       </div>
                     ))}
                   </div>
                   {req.notes && (
-                    <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "8px 0 0", fontStyle: "italic" }}>
-                      {req.notes}
-                    </p>
+                    <p className="text-[12px] text-[var(--text-muted)] m-0 mt-2 italic">{req.notes}</p>
                   )}
-                  <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                  <div className="flex gap-2 mt-3">
                     {req.status === "PENDING" && (
-                      <button
+                      <Button
+                        size="sm"
                         onClick={async () => { await updateSpecialRequestStatus(req.id, "ORDERED"); router.refresh() }}
-                        className="btn btn-primary btn-sm"
                       >
                         Marcar como Pedido
-                      </button>
+                      </Button>
                     )}
                     {req.status === "ORDERED" && (
-                      <button
+                      <Button
+                        size="sm"
                         onClick={async () => { await updateSpecialRequestStatus(req.id, "DELIVERED"); router.refresh() }}
-                        className="btn btn-primary btn-sm"
                       >
                         Marcar como Entregue
-                      </button>
+                      </Button>
                     )}
-                    <button
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      icon={<Trash2 size={14} />}
+                      className="text-[var(--color-error)] border-[var(--color-error)]/30"
                       onClick={async () => { if (confirm("Excluir este pedido?")) { await deleteSpecialRequest(req.id); router.refresh() } }}
-                      style={{
-                        padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600,
-                        border: "1px solid var(--border-color)", cursor: "pointer",
-                        background: "transparent", color: "var(--color-error)",
-                        display: "flex", alignItems: "center", gap: 4,
-                      }}
                     >
-                      <Trash2 size={14} /> Excluir
-                    </button>
+                      Excluir
+                    </Button>
                   </div>
                 </div>
               )}
-            </div>
+            </Card>
           )
         })}
         {filtered.length === 0 && (
-          <div className="card" style={{ padding: 32, textAlign: "center" }}>
-            <p style={{ fontSize: 14, margin: 0, color: "var(--text-muted)" }}>Nenhum pedido nominal encontrado.</p>
-          </div>
+          <Card variant="elevated">
+            <EmptyState
+              icon={<Search size={28} />}
+              title="Nenhum pedido nominal"
+              description="Crie um novo pedido para um publicador."
+            />
+          </Card>
         )}
       </div>
 
-      {/* Modal novo pedido — via portal no body */}
       {showForm && (
         <NewRequestModal items={items} congId={congId} onClose={() => { setShowForm(false); router.refresh() }} />
       )}
@@ -201,28 +200,17 @@ function NewRequestModal({ items, congId, onClose }: { items: ItemOption[]; cong
 
   const modal = (
     <div
-      style={{
-        position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-        zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center",
-        background: "rgba(0,0,0,0.5)", padding: 16,
-      }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
-        style={{
-          background: "var(--surface-card)", borderRadius: 16, width: "100%", maxWidth: 480,
-          maxHeight: "85vh", overflowY: "auto", padding: 20,
-          display: "flex", flexDirection: "column", gap: 16,
-        }}
+        className="bg-[var(--surface-card)] rounded-2xl w-full max-w-[480px] max-h-[85vh] overflow-y-auto p-5 flex flex-col gap-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>Novo Pedido Nominal</h3>
+        <h3 className="text-[18px] font-bold m-0 text-[var(--text-primary)]">Novo Pedido Nominal</h3>
 
-        {/* Nome */}
         <div>
-          <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>
-            Nome do publicador
-          </label>
+          <label className="text-[12px] font-semibold text-[var(--text-muted)] block mb-1">Nome do publicador</label>
           <input
             type="text"
             value={personName}
@@ -232,92 +220,73 @@ function NewRequestModal({ items, congId, onClose }: { items: ItemOption[]; cong
           />
         </div>
 
-        {/* Buscar publicação */}
-        <div style={{ position: "relative", zIndex: 10 }}>
-          <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>
-            Adicionar publicação
-          </label>
-          <div style={{ position: "relative" }}>
-            <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--text-muted)", pointerEvents: "none" }} />
+        <div className="relative z-10">
+          <label className="text-[12px] font-semibold text-[var(--text-muted)] block mb-1">Adicionar publicação</label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-[var(--text-muted)]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar por nome ou código..."
-              className="input"
-              style={{ paddingLeft: "2.5rem" }}
+              className="input pl-10"
             />
           </div>
           {available.length > 0 && (
-            <div style={{
-              position: "absolute", left: 0, right: 0, top: "100%",
-              maxHeight: 200, overflowY: "auto", border: "1px solid var(--border-color)",
-              borderRadius: 8, background: "var(--surface-card)",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
-            }}>
-              {available.slice(0, 20).map((item) => (
+            <div className="absolute left-0 right-0 top-full mt-1 max-h-[200px] overflow-y-auto border border-[var(--border-color)] rounded-[10px] bg-[var(--surface-card)] shadow-lg">
+              {available.slice(0, 20).map((item, i) => (
                 <button
                   key={item.id}
                   onClick={() => addItem(item.id)}
-                  style={{
-                    width: "100%", padding: "8px 12px", border: "none", borderBottom: "1px solid var(--border-color)",
-                    background: "transparent", cursor: "pointer", textAlign: "left",
-                    display: "flex", alignItems: "center", gap: 10,
-                  }}
+                  className={cn(
+                    "w-full px-3 py-2 border-none bg-transparent cursor-pointer text-left flex items-center gap-2.5",
+                    "active:bg-[var(--surface-bg)]",
+                    i < Math.min(available.length, 20) - 1 && "border-b border-[var(--border-color)]"
+                  )}
                 >
                   <ItemImage src={null} alt={item.title} pubCode={item.pubCode} langCode={item.langCode} width={28} height={38} />
-                  <span style={{ fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{item.title}</span>
-                  <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0, marginLeft: 8 }}>{item.pubCode}</span>
+                  <span className="text-[13px] text-[var(--text-primary)] truncate flex-1 min-w-0">{item.title}</span>
+                  <span className="text-[11px] text-[var(--text-muted)] flex-shrink-0 ml-2">{item.pubCode}</span>
                 </button>
               ))}
             </div>
           )}
           {searchQuery.trim() && available.length === 0 && (
-            <div style={{
-              position: "absolute", left: 0, right: 0, top: "100%",
-              border: "1px solid var(--border-color)", borderRadius: 8,
-              background: "var(--surface-card)", boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
-            }}>
-              <p style={{ padding: 12, fontSize: 13, color: "var(--text-muted)", margin: 0 }}>Nenhum item encontrado.</p>
+            <div className="absolute left-0 right-0 top-full mt-1 border border-[var(--border-color)] rounded-[10px] bg-[var(--surface-card)] shadow-lg">
+              <p className="p-3 text-[13px] text-[var(--text-muted)] m-0">Nenhum item encontrado.</p>
             </div>
           )}
         </div>
 
-        {/* Publicações selecionadas */}
         {selected.length > 0 && (
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 6 }}>
+            <label className="text-[12px] font-semibold text-[var(--text-muted)] block mb-1.5">
               Publicações ({selected.length})
             </label>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div className="flex flex-col gap-1.5">
               {selected.map((s) => {
                 const item = items.find((i) => i.id === s.itemId)!
                 return (
-                  <div key={s.itemId} style={{
-                    display: "flex", alignItems: "center", gap: 10, padding: "8px 10px",
-                    background: "var(--surface-bg)", borderRadius: 8, border: "1px solid var(--border-color)",
-                  }}>
+                  <div key={s.itemId} className="flex items-center gap-2.5 px-2.5 py-2 bg-[var(--surface-bg)] rounded-lg border border-[var(--border-color)]">
                     <ItemImage src={null} alt={item.title} pubCode={item.pubCode} langCode={item.langCode} width={32} height={44} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, margin: 0, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {item.title}
-                      </p>
-                      <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{item.pubCode}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-semibold m-0 text-[var(--text-primary)] truncate">{item.title}</p>
+                      <span className="text-[10px] text-[var(--text-muted)]">{item.pubCode}</span>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => updateQty(s.itemId, s.quantity - 1)}
-                        style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid var(--border-color)", background: "var(--surface-card)", cursor: "pointer", fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}
+                        className="w-7 h-7 rounded-md border border-[var(--border-color)] bg-[var(--surface-card)] cursor-pointer text-[16px] font-bold text-[var(--text-primary)] flex items-center justify-center"
                       >{"\u2212"}</button>
-                      <span style={{ fontSize: 14, fontWeight: 700, minWidth: 20, textAlign: "center", color: "var(--text-primary)" }}>{s.quantity}</span>
+                      <span className="text-[14px] font-bold min-w-[20px] text-center text-[var(--text-primary)] tabular-nums">{s.quantity}</span>
                       <button
                         onClick={() => updateQty(s.itemId, s.quantity + 1)}
-                        style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid var(--border-color)", background: "var(--surface-card)", cursor: "pointer", fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}
+                        className="w-7 h-7 rounded-md border border-[var(--border-color)] bg-[var(--surface-card)] cursor-pointer text-[16px] font-bold text-[var(--text-primary)] flex items-center justify-center"
                       >+</button>
                     </div>
                     <button
                       onClick={() => removeItem(s.itemId)}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-error)", padding: 4 }}
+                      className="bg-transparent border-none cursor-pointer text-[var(--color-error)] p-1"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -328,9 +297,8 @@ function NewRequestModal({ items, congId, onClose }: { items: ItemOption[]; cong
           </div>
         )}
 
-        {/* Observações */}
         <div>
-          <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>
+          <label className="text-[12px] font-semibold text-[var(--text-muted)] block mb-1">
             Observações (opcional)
           </label>
           <input
@@ -342,30 +310,18 @@ function NewRequestModal({ items, congId, onClose }: { items: ItemOption[]; cong
           />
         </div>
 
-        {/* Ações */}
-        <div style={{ display: "flex", gap: 10 }}>
-          <button
-            onClick={onClose}
-            style={{
-              flex: 1, padding: "12px 0", borderRadius: 10, fontSize: 14, fontWeight: 600,
-              border: "1px solid var(--border-color)", background: "var(--surface-card)",
-              color: "var(--text-secondary)", cursor: "pointer",
-            }}
-          >
+        <div className="flex gap-2.5">
+          <Button variant="secondary" onClick={onClose} fullWidth>
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleSubmit}
             disabled={!personName.trim() || selected.length === 0 || saving}
-            style={{
-              flex: 1, padding: "12px 0", borderRadius: 10, fontSize: 14, fontWeight: 600,
-              border: "none", background: "var(--color-primary)", color: "white",
-              cursor: personName.trim() && selected.length > 0 && !saving ? "pointer" : "not-allowed",
-              opacity: personName.trim() && selected.length > 0 && !saving ? 1 : 0.5,
-            }}
+            loading={saving}
+            fullWidth
           >
-            {saving ? "Salvando..." : "Registrar Pedido"}
-          </button>
+            Registrar Pedido
+          </Button>
         </div>
       </div>
     </div>

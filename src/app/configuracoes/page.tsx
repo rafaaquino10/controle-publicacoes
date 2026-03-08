@@ -1,8 +1,8 @@
 "use client"
 
 import { signOut, useSession } from "next-auth/react"
-import Link from "next/link"
 import { LogOut, BellRing, Smartphone, Users, MapPin } from "lucide-react"
+import { GroupedList, GroupedRow, Card, Button, Badge } from "@/components/ui"
 import ThemeToggle from "@/components/ThemeToggle"
 
 export default function SettingsPage() {
@@ -19,119 +19,87 @@ export default function SettingsPage() {
   return (
     <div className="animate-in flex flex-col gap-5 pb-8">
       <div>
-        <h2 className="page-title">Configurações</h2>
-        <p className="page-subtitle">Conta, aparência e segurança.</p>
+        <h1 className="text-[28px] font-bold tracking-tight m-0 text-[var(--text-primary)]">Configurações</h1>
+        <p className="text-[14px] mt-0.5 m-0 text-[var(--text-muted)]">Conta, aparência e segurança.</p>
       </div>
 
-      {/* Dados Pessoais */}
-      <div className="card p-5">
+      {/* Profile card */}
+      <Card variant="elevated" className="p-5">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0" style={{ background: "var(--surface-bg)" }}>
+          <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 bg-[var(--surface-bg)]">
             {user?.image ? (
               <img src={user.image} alt="Perfil" className="w-full h-full object-cover" />
             ) : (
-              <div
-                className="w-full h-full flex items-center justify-center text-white font-bold text-xl"
-                style={{ background: "var(--color-primary)" }}
-              >
+              <div className="w-full h-full flex items-center justify-center text-white font-bold text-xl bg-[var(--color-primary)]">
                 {user?.name?.charAt(0) || "U"}
               </div>
             )}
           </div>
           <div>
-            <h3 className="font-bold text-lg m-0" style={{ color: "var(--text-primary)" }}>{user?.name || "Usuário"}</h3>
-            <p className="text-sm m-0 mt-0.5" style={{ color: "var(--text-secondary)" }}>{user?.email}</p>
-            <span className="badge badge-navy mt-2 inline-flex">
+            <h3 className="font-bold text-[18px] m-0 text-[var(--text-primary)]">{user?.name || "Usuário"}</h3>
+            <p className="text-[14px] m-0 mt-0.5 text-[var(--text-secondary)]">{user?.email}</p>
+            <Badge variant="primary" className="mt-2">
               {roleLabels[user?.role] || user?.role || "Indisponível"}
-            </span>
+            </Badge>
           </div>
         </div>
-      </div>
+      </Card>
 
-      {/* Opções */}
-      <div className="flex flex-col gap-2">
-        {isSS && (
-          <>
-            <SettingsLink
-              href="/configuracoes/usuarios"
-              icon={<Users className="w-5 h-5" />}
-              iconStyle={{ background: "color-mix(in srgb, var(--color-primary) 10%, transparent)", color: "var(--color-primary)" }}
-              title="Usuários e Convites"
-              desc="Gerenciar acessos"
-            />
-            <SettingsLink
-              href="/configuracoes/locais"
-              icon={<MapPin className="w-5 h-5" />}
-              iconStyle={{ background: "color-mix(in srgb, var(--color-success) 10%, transparent)", color: "var(--color-success)" }}
-              title="Localizações Físicas"
-              desc="Armários, mostruários e grupos"
-            />
-          </>
-        )}
-        <div className="card p-4 flex flex-col gap-3">
-          <p className="font-bold text-sm m-0" style={{ color: "var(--text-primary)" }}>Aparência</p>
+      {/* Settings groups */}
+      {isSS && (
+        <GroupedList header="Administração">
+          <GroupedRow
+            href="/configuracoes/usuarios"
+            icon={<Users size={16} />}
+            iconBg="bg-[var(--color-primary)]"
+            label="Usuários e Convites"
+            value="Gerenciar"
+            chevron
+          />
+          <GroupedRow
+            href="/configuracoes/locais"
+            icon={<MapPin size={16} />}
+            iconBg="bg-[var(--color-success)]"
+            label="Localizações Físicas"
+            value="Gerenciar"
+            chevron
+          />
+        </GroupedList>
+      )}
+
+      <GroupedList header="Preferências">
+        <div className="px-4 py-3">
+          <p className="font-semibold text-[14px] m-0 mb-3 text-[var(--text-primary)]">Aparência</p>
           <ThemeToggle />
         </div>
-        <SettingsButton
-          icon={<BellRing className="w-5 h-5" />}
-          iconStyle={{ background: "color-mix(in srgb, var(--color-primary) 10%, transparent)", color: "var(--color-primary)" }}
-          title="Notificações"
-          desc="Alertas de estoque baixo"
+        <GroupedRow
+          icon={<BellRing size={16} />}
+          iconBg="bg-[var(--color-primary)]"
+          label="Notificações"
+          value="Em breve"
         />
-      </div>
+      </GroupedList>
 
       {/* PWA & Logout */}
-      <div className="flex flex-col gap-3 mt-2">
-        <div className="card p-4 flex gap-3 items-start" style={{ borderColor: "color-mix(in srgb, var(--color-primary) 20%, transparent)", background: "color-mix(in srgb, var(--color-primary) 5%, transparent)" }}>
-          <Smartphone className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: "var(--color-primary)" }} />
-          <div>
-            <p className="text-sm font-bold m-0" style={{ color: "var(--color-primary)" }}>App Offline (PWA)</p>
-            <p className="text-xs mt-1 m-0" style={{ color: "var(--text-secondary)" }}>
-              O app está disponível para instalação no botão de opções do seu navegador.
-            </p>
-          </div>
+      <Card variant="elevated" className="p-4 flex gap-3 items-start border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5">
+        <Smartphone size={20} className="mt-0.5 flex-shrink-0 text-[var(--color-primary)]" />
+        <div>
+          <p className="text-[14px] font-bold m-0 text-[var(--color-primary)]">App Offline (PWA)</p>
+          <p className="text-[12px] mt-1 m-0 text-[var(--text-secondary)]">
+            O app está disponível para instalação no botão de opções do seu navegador.
+          </p>
         </div>
+      </Card>
 
-        <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          className="btn btn-danger w-full flex items-center justify-center gap-2 mt-1"
-        >
-          <LogOut className="w-5 h-5" />
-          Encerrar Sessão
-        </button>
-      </div>
+      <Button
+        variant="danger"
+        fullWidth
+        size="lg"
+        icon={<LogOut size={20} />}
+        onClick={() => signOut({ callbackUrl: "/login" })}
+      >
+        Encerrar Sessão
+      </Button>
     </div>
-  )
-}
-
-function SettingsLink({ href, icon, iconStyle, title, desc }: {
-  href: string; icon: React.ReactNode; iconStyle: React.CSSProperties; title: string; desc: string
-}) {
-  return (
-    <Link href={href} className="no-underline card p-4 flex items-center gap-4">
-      <div className="w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0" style={iconStyle}>
-        {icon}
-      </div>
-      <div>
-        <p className="font-bold text-sm m-0" style={{ color: "var(--text-primary)" }}>{title}</p>
-        <p className="text-xs m-0 mt-0.5" style={{ color: "var(--text-muted)" }}>{desc}</p>
-      </div>
-    </Link>
-  )
-}
-
-function SettingsButton({ icon, iconStyle, title, desc }: {
-  icon: React.ReactNode; iconStyle: React.CSSProperties; title: string; desc: string
-}) {
-  return (
-    <button className="card p-4 flex items-center gap-4 text-left cursor-pointer border-none w-full" style={{ background: "var(--surface-card)" }}>
-      <div className="w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0" style={iconStyle}>
-        {icon}
-      </div>
-      <div>
-        <p className="font-bold text-sm m-0" style={{ color: "var(--text-primary)" }}>{title}</p>
-        <p className="text-xs m-0 mt-0.5" style={{ color: "var(--text-muted)" }}>{desc}</p>
-      </div>
-    </button>
   )
 }

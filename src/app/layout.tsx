@@ -7,6 +7,7 @@ import SideNav from "@/components/SideNav"
 import MobileHeader from "@/components/MobileHeader"
 import ThemeProvider from "@/components/ThemeProvider"
 import PageTransition from "@/components/PageTransition"
+import { cn } from "@/lib/cn"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -22,7 +23,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#1e3a5f",
+  themeColor: "#4a6da7",
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
@@ -40,7 +41,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body className={inter.className} style={{ margin: 0, background: "var(--surface-bg)", color: "var(--text-primary)" }}>
+      <body className={cn(inter.className, "bg-[var(--surface-bg)] text-[var(--text-primary)] m-0")}>
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem("theme");var d=t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme:dark)").matches);if(d)document.documentElement.classList.add("dark")}catch(e){}})()`,
@@ -48,7 +49,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         />
         <SessionProvider session={session}>
           <ThemeProvider>
-            {/* Header mobile */}
+            {/* Mobile header */}
             {isLogged && (
               <Suspense fallback={null}>
                 <MobileHeader isSS={isSS} userName={user?.name} userImage={user?.image} />
@@ -60,7 +61,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                 <SideNav isSS={isSS} userName={user?.name} userImage={user?.image} />
               )}
 
-              <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-4 pb-20 md:px-8 md:py-6 md:pb-6">
+              <main className={cn(
+                "flex-1 w-full mx-auto",
+                "px-4 pt-2 pb-24",
+                "md:px-8 md:py-6 md:pb-6",
+                "max-w-3xl"
+              )}>
                 <PageTransition>
                   {children}
                 </PageTransition>

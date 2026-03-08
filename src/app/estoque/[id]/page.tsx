@@ -2,8 +2,10 @@ import { requireAuth } from "@/lib/auth-utils"
 import { getItemDetail, getItemMonthlyConsumption, getItemMovementHistory } from "@/actions/item-detail.actions"
 import ItemImage from "@/components/ItemImage"
 import Breadcrumb from "@/components/Breadcrumb"
+import { Card, Badge, GroupedList, GroupedRow, Button, EmptyState } from "@/components/ui"
 import Link from "next/link"
-import { ArrowUpRight, Package, MapPin, ArrowDownLeft } from "lucide-react"
+import { ArrowUpRight, ArrowDownLeft, MapPin, Package } from "lucide-react"
+import { cn } from "@/lib/cn"
 
 const typeLabels: Record<string, string> = {
   RECEIVE_SHIPMENT:  "Entrada (remessa)",
@@ -43,9 +45,16 @@ export default async function ItemDetailPage({
 
   if (!detail) {
     return (
-      <div className="animate-in flex flex-col gap-4 items-center py-16">
-        <p className="text-lg font-bold" style={{ color: "var(--text-muted)" }}>Item não encontrado</p>
-        <Link href="/estoque" className="btn btn-primary btn-sm no-underline">Voltar ao Estoque</Link>
+      <div className="animate-in flex flex-col items-center py-16">
+        <EmptyState
+          icon={<Package size={28} />}
+          title="Item não encontrado"
+          action={
+            <Link href="/estoque" className="no-underline">
+              <Button size="sm">Voltar ao Estoque</Button>
+            </Link>
+          }
+        />
       </div>
     )
   }
@@ -62,7 +71,7 @@ export default async function ItemDetailPage({
         { label: item.title },
       ]} />
 
-      {/* Header: imagem + info */}
+      {/* Header: image + info */}
       <div className="flex flex-col md:flex-row gap-5">
         <div className="flex-shrink-0 mx-auto md:mx-0">
           <ItemImage
@@ -75,75 +84,71 @@ export default async function ItemDetailPage({
           />
         </div>
         <div className="flex-1">
-          <h1 className="text-lg font-bold m-0 leading-snug" style={{ color: "var(--text-primary)" }}>
+          <h1 className="text-[20px] font-bold m-0 leading-snug text-[var(--text-primary)]">
             {item.title}
           </h1>
           <div className="flex flex-wrap gap-1.5 mt-3">
-            <span className="badge badge-slate">{item.pubCode}</span>
-            <span className="badge badge-slate">{item.langCode}</span>
-            <span className="badge badge-navy">{formatLabels[item.format] || item.format}</span>
-            <span className="badge badge-green">{item.categoryTags}</span>
-            {item.isSpecialOrder && <span className="badge badge-amber">Especial</span>}
+            <Badge variant="slate">{item.pubCode}</Badge>
+            <Badge variant="slate">{item.langCode}</Badge>
+            <Badge variant="primary">{formatLabels[item.format] || item.format}</Badge>
+            <Badge variant="green">{item.categoryTags}</Badge>
+            {item.isSpecialOrder && <Badge variant="amber">Especial</Badge>}
           </div>
 
-          {/* Informações de estoque */}
+          {/* Stock stats */}
           <div className="grid grid-cols-2 gap-3 mt-4">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wide mb-0.5 m-0" style={{ color: "var(--text-muted)" }}>
+              <p className="text-[10px] font-bold uppercase tracking-wider mb-0.5 m-0 text-[var(--text-muted)]">
                 Total em Estoque
               </p>
-              <p className="text-3xl font-bold m-0" style={{ color: "var(--text-primary)" }}>
+              <p className="text-[32px] font-bold m-0 text-[var(--text-primary)] leading-none tabular-nums">
                 {totalQuantity}
               </p>
             </div>
             {avgConsumption > 0 && (
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wide mb-0.5 m-0" style={{ color: "var(--text-muted)" }}>
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-0.5 m-0 text-[var(--text-muted)]">
                   Consumo Mensal
                 </p>
-                <p className="text-3xl font-bold m-0" style={{ color: "var(--text-secondary)" }}>
+                <p className="text-[32px] font-bold m-0 text-[var(--text-secondary)] leading-none tabular-nums">
                   {avgConsumption}
                 </p>
               </div>
             )}
           </div>
 
-          {/* Botões de ação — pre-preenchem o item */}
+          {/* Action buttons */}
           <div className="flex gap-2 mt-4">
-            <Link href={`/entrada?item=${encodedItemId}`} className="no-underline btn btn-primary btn-sm">
-              <ArrowDownLeft className="w-4 h-4" /> Dar Entrada
+            <Link href={`/entrada?item=${encodedItemId}`} className="no-underline">
+              <Button size="sm" icon={<ArrowDownLeft size={16} />}>Dar Entrada</Button>
             </Link>
-            <Link href={`/saida?item=${encodedItemId}`} className="no-underline btn btn-danger btn-sm">
-              <ArrowUpRight className="w-4 h-4" /> Registrar Saída
+            <Link href={`/saida?item=${encodedItemId}`} className="no-underline">
+              <Button variant="danger" size="sm" icon={<ArrowUpRight size={16} />}>Registrar Saída</Button>
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Estoque por local */}
-      <div className="card p-4">
-        <h3 className="section-label mb-1">Estoque por Local</h3>
-        <p style={{ fontSize: 11, margin: "0 0 10px", color: "var(--text-muted)" }}>
-          B1/B2 = Balcão frente/trás · LE/LD = Lado esq./dir. · P1/P2/P3 = Prateleira cima/meio/baixo
-        </p>
-        <div className="flex flex-col gap-2">
-          {inventory.map((inv) => (
-            <div key={inv.id} style={{ borderRadius: 8, border: "1px solid var(--border-color)", overflow: "hidden" }}>
-              <div className="flex items-center justify-between" style={{ padding: "10px 12px" }}>
-                <div className="flex items-center gap-2.5" style={{ minWidth: 0 }}>
-                  <MapPin className="w-4 h-4 flex-shrink-0" style={{ color: "var(--color-primary)" }} />
-                  <div style={{ minWidth: 0 }}>
-                    <p className="text-sm font-semibold m-0" style={{ color: "var(--text-primary)" }}>
+      {/* Stock by location */}
+      <GroupedList header="Estoque por Local">
+        {inventory.length > 0 ? (
+          inventory.map((inv) => (
+            <div key={inv.id}>
+              <div className="flex items-center justify-between px-4 py-2.5">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <MapPin size={16} className="flex-shrink-0 text-[var(--color-primary)]" />
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-semibold m-0 text-[var(--text-primary)]">
                       {inv.location?.name || "Geral"}
                     </p>
                     {inv.location?.description && (
-                      <p className="text-[11px] m-0 mt-0.5" style={{ color: "var(--text-muted)" }}>
+                      <p className="text-[11px] m-0 mt-0.5 text-[var(--text-muted)]">
                         {inv.location.description}
                       </p>
                     )}
                   </div>
                 </div>
-                <span className="text-lg font-bold flex-shrink-0 ml-3" style={{ color: "var(--text-primary)" }}>
+                <span className="text-[18px] font-bold flex-shrink-0 ml-3 text-[var(--text-primary)] tabular-nums">
                   {inv.currentQuantity}
                 </span>
               </div>
@@ -151,87 +156,93 @@ export default async function ItemDetailPage({
                 <img
                   src={inv.location.imageUrl}
                   alt={inv.location.name}
-                  style={{ width: "100%", height: 120, objectFit: "cover", borderTop: "1px solid var(--border-color)" }}
+                  className="w-full h-[120px] object-cover border-t border-[var(--border-color)]"
                 />
               )}
             </div>
-          ))}
-          {inventory.length === 0 && (
-            <p className="text-sm" style={{ color: "var(--text-muted)" }}>Sem registros de inventário.</p>
-          )}
-        </div>
-      </div>
+          ))
+        ) : (
+          <div className="px-4 py-3">
+            <p className="text-[14px] text-[var(--text-muted)] m-0">Sem registros de inventário.</p>
+          </div>
+        )}
+      </GroupedList>
 
-      {/* Gráfico de consumo mensal */}
+      {/* Consumption chart */}
       {hasConsumption && (
-        <div className="card p-4">
-          <h3 className="section-label mb-4">Consumo Mensal (6 meses)</h3>
+        <Card variant="elevated" className="p-4">
+          <h3 className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] m-0 mb-4">
+            Consumo Mensal (6 meses)
+          </h3>
           <div className="flex items-end gap-2 h-24">
             {consumption.map((c, i) => {
               const pct = (c.total / maxConsumption) * 100
               return (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>{c.total}</span>
+                  <span className="text-[10px] font-bold text-[var(--text-muted)] tabular-nums">{c.total}</span>
                   <div
-                    className="w-full rounded-sm"
-                    style={{
-                      height: `${Math.max(pct, 6)}%`,
-                      minHeight: 4,
-                      background: "var(--color-primary)",
-                    }}
+                    className="w-full rounded-sm bg-[var(--color-primary)]"
+                    style={{ height: `${Math.max(pct, 6)}%`, minHeight: 4 }}
                   />
-                  <span className="text-[9px] font-semibold" style={{ color: "var(--text-muted)" }}>{c.month}</span>
+                  <span className="text-[9px] font-semibold text-[var(--text-muted)]">{c.month}</span>
                 </div>
               )
             })}
           </div>
-        </div>
+        </Card>
       )}
 
-      {/* Histórico de movimentações */}
-      <div className="card p-4">
-        <h3 className="section-label mb-3">Histórico Recente</h3>
-        <div className="flex flex-col gap-2">
-          {movements.map((mov) => {
-            const isOut = mov.quantity < 0
-            return (
-              <div
-                key={mov.id}
-                className="flex items-center gap-3 py-2 border-b"
-                style={{ borderColor: "var(--border-color)" }}
-              >
+      {/* Movement history */}
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] m-0 mb-2 px-1">
+          Histórico Recente
+        </p>
+        {movements.length > 0 ? (
+          <div className="bg-[var(--surface-card)] rounded-[10px] overflow-hidden">
+            {movements.map((mov, i) => {
+              const isOut = mov.quantity < 0
+              const isLast = i === movements.length - 1
+              return (
                 <div
-                  className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0"
-                  style={{
-                    background: isOut
-                      ? "color-mix(in srgb, var(--color-error) 10%, transparent)"
-                      : "color-mix(in srgb, var(--color-success) 10%, transparent)",
-                    color: isOut ? "var(--color-error)" : "var(--color-success)",
-                  }}
+                  key={mov.id}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-2.5",
+                    !isLast && "border-b border-[var(--border-color)]"
+                  )}
                 >
-                  {isOut ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownLeft className="w-4 h-4" />}
+                  <div
+                    className={cn(
+                      "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
+                      isOut ? "bg-[#ff3b30]/10 text-[#ff3b30]" : "bg-[#34c759]/10 text-[#34c759]"
+                    )}
+                  >
+                    {isOut ? <ArrowUpRight size={16} /> : <ArrowDownLeft size={16} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-semibold m-0 text-[var(--text-primary)]">
+                      {typeLabels[mov.type] || mov.type}
+                    </p>
+                    <p className="text-[11px] m-0 text-[var(--text-muted)]">
+                      {mov.user?.name || "Sistema"} &middot; {new Date(mov.timestamp).toLocaleDateString("pt-BR")}
+                    </p>
+                  </div>
+                  <span
+                    className={cn(
+                      "text-[14px] font-bold tabular-nums",
+                      isOut ? "text-[#ff3b30]" : "text-[#34c759]"
+                    )}
+                  >
+                    {isOut ? "" : "+"}{mov.quantity}
+                  </span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold m-0" style={{ color: "var(--text-primary)" }}>
-                    {typeLabels[mov.type] || mov.type}
-                  </p>
-                  <p className="text-[11px] m-0" style={{ color: "var(--text-muted)" }}>
-                    {mov.user?.name || "Sistema"} &middot; {new Date(mov.timestamp).toLocaleDateString("pt-BR")}
-                  </p>
-                </div>
-                <span
-                  className="text-sm font-bold"
-                  style={{ color: isOut ? "var(--color-error)" : "var(--color-success)" }}
-                >
-                  {isOut ? "" : "+"}{mov.quantity}
-                </span>
-              </div>
-            )
-          })}
-          {movements.length === 0 && (
-            <p className="text-sm" style={{ color: "var(--text-muted)" }}>Nenhuma movimentação registrada.</p>
-          )}
-        </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="bg-[var(--surface-card)] rounded-[10px] px-4 py-3">
+            <p className="text-[14px] text-[var(--text-muted)] m-0">Nenhuma movimentação registrada.</p>
+          </div>
+        )}
       </div>
     </div>
   )

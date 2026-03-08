@@ -36,10 +36,10 @@ export default async function SpecialRequestsPage({ searchParams }: { searchPara
   }))
 
   return (
-    <div className="animate-in" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div className="animate-in flex flex-col gap-4">
       <div>
-        <h2 className="page-title">Pedidos Nominais</h2>
-        <p className="page-subtitle">Solicitações individuais de publicações</p>
+        <h1 className="text-[22px] font-bold tracking-tight m-0 text-[var(--text-primary)]">Pedidos Nominais</h1>
+        <p className="text-[14px] mt-0.5 m-0 text-[var(--text-muted)]">Solicitações individuais de publicações</p>
       </div>
       <SpecialRequestsClient requests={serialized} items={itemOptions} congId={congId} />
     </div>

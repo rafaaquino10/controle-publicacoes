@@ -5,6 +5,8 @@ import { useSession } from "next-auth/react"
 import { motion } from "framer-motion"
 import { UserPlus, Users, Shield, Copy, Check, Trash2, ToggleLeft, ToggleRight } from "lucide-react"
 import Breadcrumb from "@/components/Breadcrumb"
+import { Card, Button, Badge, EmptyState } from "@/components/ui"
+import { cn } from "@/lib/cn"
 import { listUsers, toggleUserActive, changeUserRole } from "@/actions/user.actions"
 import { createInvite, listPendingInvites, revokeInvite } from "@/actions/invite.actions"
 import type { Role } from "@/lib/types"
@@ -40,10 +42,10 @@ export default function UsersPage() {
   const [inviteRole, setInviteRole] = useState<Role>("HELPER")
 
   const roleLabels: Record<string, string> = { SS: "Superintendente", SERVO: "Servo", HELPER: "Ajudante" }
-  const roleColors: Record<string, string> = {
-    SS: "badge-purple",
-    SERVO: "badge-indigo",
-    HELPER: "badge-slate",
+  const roleBadgeVariant: Record<string, "primary" | "blue" | "slate"> = {
+    SS: "primary",
+    SERVO: "blue",
+    HELPER: "slate",
   }
 
   useEffect(() => {
@@ -98,9 +100,14 @@ export default function UsersPage() {
 
   if (user?.role !== "SS") {
     return (
-      <div className="animate-in flex flex-col items-center justify-center py-20 gap-4">
-        <Shield className="w-12 h-12 text-slate-300" />
-        <p className="text-slate-500 font-medium">Apenas o SS pode gerenciar usuários.</p>
+      <div className="animate-in">
+        <Card variant="elevated">
+          <EmptyState
+            icon={<Shield size={28} />}
+            title="Acesso restrito"
+            description="Apenas o SS pode gerenciar usuários."
+          />
+        </Card>
       </div>
     )
   }
@@ -112,17 +119,17 @@ export default function UsersPage() {
         { label: "Usuários" },
       ]} />
       <div>
-        <h2 className="page-title flex items-center gap-2">
-          <Users className="w-6 h-6 text-primary" />
+        <h1 className="text-[22px] font-bold tracking-tight m-0 text-[var(--text-primary)] flex items-center gap-2">
+          <Users size={24} className="text-[var(--color-primary)]" />
           Gestão de Usuários
-        </h2>
-        <p className="page-subtitle">Convide e gerencie os servos e ajudantes da congregação.</p>
+        </h1>
+        <p className="text-[14px] mt-0.5 m-0 text-[var(--text-muted)]">Convide e gerencie os servos e ajudantes da congregação.</p>
       </div>
 
-      {/* Criar Convite */}
-      <div className="card p-5">
-        <h3 className="text-sm font-bold text-slate-700 m-0 mb-3 flex items-center gap-1.5">
-          <UserPlus className="w-4 h-4" />
+      {/* Create invite */}
+      <Card variant="elevated" className="p-5">
+        <h3 className="text-[14px] font-bold text-[var(--text-primary)] m-0 mb-3 flex items-center gap-1.5">
+          <UserPlus size={16} />
           Novo Convite
         </h3>
         <div className="flex gap-2 items-center flex-wrap">
@@ -135,70 +142,78 @@ export default function UsersPage() {
             <option value="HELPER">Ajudante</option>
             <option value="SERVO">Servo</option>
           </select>
-          <button onClick={handleCreateInvite} disabled={isPending} className="btn btn-primary btn-sm">
-            {isPending ? "Criando..." : "Gerar Link de Convite"}
-          </button>
+          <Button onClick={handleCreateInvite} disabled={isPending} loading={isPending} size="sm">
+            Gerar Link de Convite
+          </Button>
         </div>
-      </div>
+      </Card>
 
-      {/* Convites Pendentes */}
+      {/* Pending invites */}
       {invites.length > 0 && (
         <div>
-          <span className="section-label mb-3 block">Convites Pendentes ({invites.length})</span>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] m-0 mb-2">
+            Convites Pendentes ({invites.length})
+          </p>
           <div className="flex flex-col gap-2">
             {invites.map((inv) => (
               <motion.div
                 key={inv.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="card p-3 flex items-center justify-between gap-3"
               >
-                <div>
-                  <span className={`badge ${roleColors[inv.role]}`}>
-                    {roleLabels[inv.role]}
-                  </span>
-                  <p className="text-[11px] text-slate-400 mt-1 m-0">
-                    Expira {new Date(inv.expiresAt).toLocaleDateString("pt-BR")}
-                  </p>
-                </div>
-                <div className="flex gap-1.5">
-                  <button
-                    onClick={() => handleCopyLink(inv.token)}
-                    className={`btn-icon ${copiedToken === inv.token ? "text-emerald-500 border-emerald-200" : ""}`}
-                  >
-                    {copiedToken === inv.token ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  </button>
-                  <button onClick={() => handleRevoke(inv.id)} className="btn-icon btn-icon-danger">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                <Card variant="elevated" className="p-3 flex items-center justify-between gap-3">
+                  <div>
+                    <Badge variant={roleBadgeVariant[inv.role] || "slate"}>
+                      {roleLabels[inv.role]}
+                    </Badge>
+                    <p className="text-[11px] text-[var(--text-muted)] mt-1 m-0">
+                      Expira {new Date(inv.expiresAt).toLocaleDateString("pt-BR")}
+                    </p>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => handleCopyLink(inv.token)}
+                      className={cn(
+                        "btn-icon",
+                        copiedToken === inv.token && "text-[var(--color-success)] border-[var(--color-success)]/30"
+                      )}
+                    >
+                      {copiedToken === inv.token ? <Check size={16} /> : <Copy size={16} />}
+                    </button>
+                    <button onClick={() => handleRevoke(inv.id)} className="btn-icon btn-icon-danger">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </Card>
               </motion.div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Lista de Usuários */}
+      {/* Users list */}
       <div>
-        <span className="section-label mb-3 block">Usuários ({users.length})</span>
+        <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] m-0 mb-2">
+          Usuários ({users.length})
+        </p>
         <div className="flex flex-col gap-2">
           {users.map((u) => (
-            <div
+            <Card
               key={u.id}
-              className="card p-3 flex items-center gap-3"
-              style={{ opacity: u.isActive ? 1 : 0.5 }}
+              variant="elevated"
+              className={cn("p-3 flex items-center gap-3", !u.isActive && "opacity-50")}
             >
               {u.image ? (
                 <img src={u.image} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-bold flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-[var(--color-primary)] flex items-center justify-center text-white font-bold flex-shrink-0">
                   {u.name?.charAt(0) || "?"}
                 </div>
               )}
 
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm text-slate-800 m-0">{u.name || "Sem nome"}</p>
-                <p className="text-[11px] text-slate-400 m-0 truncate">{u.email}</p>
+                <p className="font-bold text-[14px] text-[var(--text-primary)] m-0">{u.name || "Sem nome"}</p>
+                <p className="text-[11px] text-[var(--text-muted)] m-0 truncate">{u.email}</p>
               </div>
 
               <div className="flex items-center gap-2">
@@ -207,16 +222,16 @@ export default function UsersPage() {
                     value={u.role}
                     onChange={(e) => handleChangeRole(u.id, e.target.value as Role)}
                     className="select text-[11px] font-semibold"
-                    style={{ width: "auto", height: 28, padding: "0 6px", borderRadius: 6 }}
+                    style={{ width: "auto", height: 28, padding: "0 6px", borderRadius: 8 }}
                   >
                     <option value="HELPER">Ajudante</option>
                     <option value="SERVO">Servo</option>
                   </select>
                 )}
 
-                <span className={`badge ${roleColors[u.role]}`}>
+                <Badge variant={roleBadgeVariant[u.role] || "slate"}>
                   {roleLabels[u.role]}
-                </span>
+                </Badge>
 
                 {u.id !== user?.id && (
                   <button
@@ -225,14 +240,14 @@ export default function UsersPage() {
                     className="bg-transparent border-none cursor-pointer p-1"
                   >
                     {u.isActive ? (
-                      <ToggleRight className="w-5 h-5 text-emerald-500" />
+                      <ToggleRight size={20} className="text-[var(--color-success)]" />
                     ) : (
-                      <ToggleLeft className="w-5 h-5 text-slate-400" />
+                      <ToggleLeft size={20} className="text-[var(--text-muted)]" />
                     )}
                   </button>
                 )}
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       </div>

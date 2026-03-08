@@ -5,6 +5,8 @@ import { useSession } from "next-auth/react"
 import { FileText, CheckCircle2, Clock, AlertTriangle, Lock, Download } from "lucide-react"
 import { createMonthlyReport, finalizeReport, getReports } from "@/actions/report.actions"
 import { getClosingReportByLanguage } from "@/actions/analytics.actions"
+import { Card, Button, Badge, Alert } from "@/components/ui"
+import { cn } from "@/lib/cn"
 
 type ReportRow = {
   id: string
@@ -102,92 +104,98 @@ export default function RelatoriosPage() {
   return (
     <div className="animate-in flex flex-col gap-5">
       <div>
-        <h2 className="page-title">Relatórios</h2>
-        <p className="page-subtitle">Inventário mensal para Betel — prazo até dia 10.</p>
+        <h1 className="text-[22px] font-bold tracking-tight m-0 text-[var(--text-primary)]">Relatórios</h1>
+        <p className="text-[14px] mt-0.5 m-0 text-[var(--text-muted)]">Inventário mensal para Betel — prazo até dia 10.</p>
       </div>
 
-      {/* Controles */}
-      <div className="card p-4 flex flex-col gap-3">
+      {/* Controls */}
+      <Card variant="elevated" className="p-4 flex flex-col gap-3">
         <div className="grid grid-cols-3 gap-2">
           <input
             type="month"
             value={selectedPeriod}
             onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="input input-sm"
+            className="input"
           />
           <select
             value={selectedLang}
             onChange={(e) => setSelectedLang(e.target.value)}
             className="select"
-            style={{ height: 38 }}
           >
             <option value="T">Português (T)</option>
             <option value="E">Inglês (E)</option>
           </select>
-          <button onClick={handleGenerate} disabled={isPending} className="btn btn-primary btn-sm">
-            {isPending ? "Gerando..." : "Gerar Draft"}
-          </button>
+          <Button onClick={handleGenerate} disabled={isPending} loading={isPending} size="sm" className="h-11">
+            Gerar Draft
+          </Button>
         </div>
 
         {hasPendingOrders && (
-          <div className="alert-warn">
-            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-            <span>Há remessas pendentes. Finalize o recebimento antes de fechar o inventário.</span>
-          </div>
+          <Alert variant="warning">
+            Há remessas pendentes. Finalize o recebimento antes de fechar o inventário.
+          </Alert>
         )}
 
         {message && (
           <p
-            className="text-sm font-semibold m-0"
-            style={{ color: message.includes("Erro") || message.includes("remessa") ? "var(--color-error)" : "var(--color-success)" }}
+            className={cn(
+              "text-[14px] font-semibold m-0",
+              message.includes("Erro") || message.includes("remessa") ? "text-[var(--color-error)]" : "text-[var(--color-success)]"
+            )}
           >
             {message}
           </p>
         )}
-      </div>
+      </Card>
 
-      {/* Preview do Inventário */}
+      {/* Inventory preview */}
       {previewData.length > 0 && (
         <div>
-          <div className="flex justify-between items-center mb-3">
-            <span className="section-label">
+          <div className="flex justify-between items-center mb-2">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] m-0">
               Inventário Atual — {selectedLang === "T" ? "Português" : "Inglês"} ({previewData.length} itens)
-            </span>
-            <button onClick={copyToClipboard} className="btn btn-outline btn-xs">
-              <Download className="w-3 h-3" /> Copiar
-            </button>
+            </p>
+            <Button variant="secondary" size="sm" icon={<Download size={14} />} onClick={copyToClipboard}>
+              Copiar
+            </Button>
           </div>
 
-          <div className="flex flex-col gap-2">
-            {previewData.map((inv) => {
+          <div className="bg-[var(--surface-card)] rounded-[10px] overflow-hidden">
+            {previewData.map((inv, i) => {
               const shouldOrder = inv.currentQuantity <= inv.averageMonthlyConsumption && inv.averageMonthlyConsumption > 0
               const suggestion = shouldOrder
                 ? Math.max(1, Math.ceil(inv.averageMonthlyConsumption * 1.5) - inv.currentQuantity)
                 : 0
+              const isLast = i === previewData.length - 1
 
               return (
                 <div
                   key={inv.id}
-                  className={`card p-3 ${shouldOrder ? "border-l-4 border-l-primary" : "opacity-70"}`}
+                  className={cn(
+                    "px-4 py-3",
+                    shouldOrder && "border-l-4 border-l-[var(--color-primary)]",
+                    !shouldOrder && "opacity-70",
+                    !isLast && "border-b border-[var(--border-color)]"
+                  )}
                 >
                   <div className="flex justify-between items-center">
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm m-0 truncate" style={{ color: "var(--text-primary)" }}>{inv.item.title}</p>
-                      <div className="flex gap-2 mt-1 text-[10px]" style={{ color: "var(--text-muted)" }}>
+                      <p className="font-semibold text-[14px] m-0 truncate text-[var(--text-primary)]">{inv.item.title}</p>
+                      <div className="flex gap-2 mt-1 text-[10px] text-[var(--text-muted)]">
                         <span>{inv.item.pubCode}</span>
                         {inv.item.format !== "NORMAL" && <span>({inv.item.format})</span>}
                         {inv.location?.labelCode && <span>@ {inv.location.labelCode}</span>}
                       </div>
                     </div>
                     <div className="text-right ml-3">
-                      <span className="text-xl font-black" style={{ color: "var(--text-primary)" }}>{inv.currentQuantity}</span>
+                      <span className="text-[20px] font-black text-[var(--text-primary)] tabular-nums">{inv.currentQuantity}</span>
                       {shouldOrder && (
-                        <p className="text-[10px] text-primary font-bold m-0">Pedir +{suggestion}</p>
+                        <p className="text-[10px] text-[var(--color-primary)] font-bold m-0">Pedir +{suggestion}</p>
                       )}
                     </div>
                   </div>
                   {inv.averageMonthlyConsumption > 0 && (
-                    <p className="text-[10px] mt-1.5 m-0" style={{ color: "var(--text-muted)" }}>
+                    <p className="text-[10px] mt-1.5 m-0 text-[var(--text-muted)]">
                       Média: {inv.averageMonthlyConsumption}/mês
                       {shouldOrder && " — Sugestão baseada em 1.5x da média"}
                     </p>
@@ -199,46 +207,54 @@ export default function RelatoriosPage() {
         </div>
       )}
 
-      {/* Histórico de Relatórios */}
+      {/* Report history */}
       {reports.length > 0 && (
         <div>
-          <span className="section-label mb-3 block">Histórico ({reports.length})</span>
-          <div className="flex flex-col gap-2">
-            {reports.map((report) => (
-              <div key={report.id} className="card p-3 flex justify-between items-center">
-                <div>
-                  <p className="font-bold text-sm m-0" style={{ color: "var(--text-primary)" }}>
-                    {report.period} — {report.langCode}
-                  </p>
-                  <p className="text-[11px] m-0 mt-0.5" style={{ color: "var(--text-muted)" }}>
-                    Por {report.generatedBy?.name || "—"} em {new Date(report.createdAt).toLocaleDateString("pt-BR")}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {report.status === "DRAFT" ? (
-                    <>
-                      <span className="badge badge-amber flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> Rascunho
-                      </span>
-                      {user?.role === "SS" && (
-                        <button
-                          onClick={() => handleFinalize(report.id)}
-                          disabled={isPending}
-                          className="btn btn-sm flex items-center gap-1"
-                          style={{ height: 28, fontSize: 11, background: "var(--color-success)", color: "white" }}
-                        >
-                          <Lock className="w-3 h-3" /> Finalizar
-                        </button>
-                      )}
-                    </>
-                  ) : (
-                    <span className="badge badge-green flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" /> Final
-                    </span>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] m-0 mb-2">
+            Histórico ({reports.length})
+          </p>
+          <div className="bg-[var(--surface-card)] rounded-[10px] overflow-hidden">
+            {reports.map((report, i) => {
+              const isLast = i === reports.length - 1
+              return (
+                <div
+                  key={report.id}
+                  className={cn(
+                    "px-4 py-3 flex justify-between items-center",
+                    !isLast && "border-b border-[var(--border-color)]"
                   )}
+                >
+                  <div>
+                    <p className="font-bold text-[14px] m-0 text-[var(--text-primary)]">
+                      {report.period} — {report.langCode}
+                    </p>
+                    <p className="text-[11px] m-0 mt-0.5 text-[var(--text-muted)]">
+                      Por {report.generatedBy?.name || "—"} em {new Date(report.createdAt).toLocaleDateString("pt-BR")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {report.status === "DRAFT" ? (
+                      <>
+                        <Badge variant="amber"><Clock size={12} /> Rascunho</Badge>
+                        {user?.role === "SS" && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleFinalize(report.id)}
+                            disabled={isPending}
+                            icon={<Lock size={12} />}
+                            className="bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 h-7 text-[11px]"
+                          >
+                            Finalizar
+                          </Button>
+                        )}
+                      </>
+                    ) : (
+                      <Badge variant="green"><CheckCircle2 size={12} /> Final</Badge>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}

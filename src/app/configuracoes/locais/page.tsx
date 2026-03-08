@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useTransition } from "react"
 import { useSession } from "next-auth/react"
-import { motion, AnimatePresence } from "framer-motion"
+import { AnimatePresence, motion } from "framer-motion"
 import { MapPin, Plus, Trash2, Edit3, X, QrCode } from "lucide-react"
 import Breadcrumb from "@/components/Breadcrumb"
+import { Card, Button, Badge, EmptyState } from "@/components/ui"
+import { cn } from "@/lib/cn"
 import { getLocations, createLocation, updateLocation, deleteLocation } from "@/actions/location.actions"
 import type { SubStockType } from "@/lib/types"
 
@@ -89,16 +91,16 @@ export default function LocaisPage() {
     GRUPO_CAMPO: "Grupo de Campo",
   }
 
-  const subStockBadge: Record<string, string> = {
-    ARMARIO: "badge-blue",
-    MOSTRUARIO: "badge-green",
-    GRUPO_CAMPO: "badge-amber",
+  const subStockBadgeVariant: Record<string, "blue" | "green" | "amber"> = {
+    ARMARIO: "blue",
+    MOSTRUARIO: "green",
+    GRUPO_CAMPO: "amber",
   }
 
-  const subStockIcon: Record<string, { bg: string; fg: string }> = {
-    ARMARIO: { bg: "bg-blue-50", fg: "text-blue-500" },
-    MOSTRUARIO: { bg: "bg-emerald-50", fg: "text-emerald-500" },
-    GRUPO_CAMPO: { bg: "bg-amber-50", fg: "text-amber-500" },
+  const subStockIconBg: Record<string, string> = {
+    ARMARIO: "bg-[#007aff]/12 text-[#007aff]",
+    MOSTRUARIO: "bg-[var(--color-success)]/12 text-[var(--color-success)]",
+    GRUPO_CAMPO: "bg-[var(--color-warn)]/12 text-[var(--color-warn)]",
   }
 
   return (
@@ -109,54 +111,52 @@ export default function LocaisPage() {
       ]} />
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="page-title flex items-center gap-2">
-            <MapPin className="w-6 h-6 text-primary" />
+          <h1 className="text-[22px] font-bold tracking-tight m-0 text-[var(--text-primary)] flex items-center gap-2">
+            <MapPin size={24} className="text-[var(--color-primary)]" />
             Localizações
-          </h2>
-          <p className="page-subtitle">{locations.length} locais cadastrados</p>
+          </h1>
+          <p className="text-[14px] mt-0.5 m-0 text-[var(--text-muted)]">{locations.length} locais cadastrados</p>
         </div>
-        <button
+        <Button
           onClick={() => { resetForm(); setShowForm(!showForm) }}
-          className="btn btn-primary btn-sm"
+          size="sm"
+          icon={<Plus size={16} />}
         >
-          <Plus className="w-4 h-4" /> Novo
-        </button>
+          Novo
+        </Button>
       </div>
 
-      {/* Legenda de nomenclatura */}
-      <div className="card" style={{ padding: "14px 16px" }}>
-        <p style={{ fontSize: 13, fontWeight: 700, margin: "0 0 8px", color: "var(--text-primary)" }}>
-          Como ler os códigos
+      {/* Naming legend */}
+      <Card variant="elevated" className="p-4">
+        <p className="text-[13px] font-bold m-0 mb-2 text-[var(--text-primary)]">Como ler os códigos</p>
+        <p className="text-[12px] m-0 mb-2.5 text-[var(--text-muted)] leading-relaxed">
+          Cada local segue o padrão <strong className="text-[var(--text-secondary)]">B_.L_.P_</strong> — Balcão, Lado e Prateleira.
         </p>
-        <p style={{ fontSize: 12, margin: "0 0 10px", color: "var(--text-muted)", lineHeight: 1.5 }}>
-          Cada local segue o padrão <strong style={{ color: "var(--text-secondary)" }}>B_.L_.P_</strong> — Balcão, Lado e Prateleira.
-        </p>
-        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "4px 12px", fontSize: 12 }}>
-          <span style={{ fontWeight: 700, color: "var(--color-primary)" }}>B1</span>
-          <span style={{ color: "var(--text-muted)" }}>Balcão 1 — da frente (perto do auditório)</span>
-          <span style={{ fontWeight: 700, color: "var(--color-primary)" }}>B2</span>
-          <span style={{ color: "var(--text-muted)" }}>Balcão 2 — de trás (perto do palco)</span>
-          <span style={{ fontWeight: 700, color: "var(--color-primary)" }}>LE</span>
-          <span style={{ color: "var(--text-muted)" }}>Lado Esquerdo</span>
-          <span style={{ fontWeight: 700, color: "var(--color-primary)" }}>LD</span>
-          <span style={{ color: "var(--text-muted)" }}>Lado Direito</span>
-          <span style={{ fontWeight: 700, color: "var(--color-primary)" }}>P1</span>
-          <span style={{ color: "var(--text-muted)" }}>Prateleira 1 — de cima (superior)</span>
-          <span style={{ fontWeight: 700, color: "var(--color-primary)" }}>P2</span>
-          <span style={{ color: "var(--text-muted)" }}>Prateleira 2 — do meio</span>
-          <span style={{ fontWeight: 700, color: "var(--color-primary)" }}>P3</span>
-          <span style={{ color: "var(--text-muted)" }}>Prateleira 3 — de baixo (inferior)</span>
-          <span style={{ fontWeight: 700, color: "var(--color-primary)" }}>Tampo</span>
-          <span style={{ color: "var(--text-muted)" }}>Em cima do balcão (exposição livre)</span>
+        <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[12px]">
+          {[
+            ["B1", "Balcão 1 — da frente (perto do auditório)"],
+            ["B2", "Balcão 2 — de trás (perto do palco)"],
+            ["LE", "Lado Esquerdo"],
+            ["LD", "Lado Direito"],
+            ["P1", "Prateleira 1 — de cima (superior)"],
+            ["P2", "Prateleira 2 — do meio"],
+            ["P3", "Prateleira 3 — de baixo (inferior)"],
+            ["Tampo", "Em cima do balcão (exposição livre)"],
+          ].map(([code, desc]) => (
+            <Fragment key={code}>
+              <span className="font-bold text-[var(--color-primary)]">{code}</span>
+              <span className="text-[var(--text-muted)]">{desc}</span>
+            </Fragment>
+          ))}
         </div>
-        <div style={{ marginTop: 10, padding: "8px 10px", borderRadius: 8, background: "color-mix(in srgb, var(--color-primary) 8%, transparent)" }}>
-          <p style={{ fontSize: 12, margin: 0, color: "var(--text-secondary)", lineHeight: 1.5 }}>
-            <strong>Exemplo:</strong> <span style={{ fontWeight: 700, color: "var(--color-primary)" }}>B1.LE.P3</span> = Balcão da frente, abra a porta esquerda, prateleira de baixo.
+        <div className="mt-2.5 px-2.5 py-2 rounded-lg bg-[var(--color-primary)]/8">
+          <p className="text-[12px] m-0 text-[var(--text-secondary)] leading-relaxed">
+            <strong>Exemplo:</strong> <span className="font-bold text-[var(--color-primary)]">B1.LE.P3</span> = Balcão da frente, abra a porta esquerda, prateleira de baixo.
           </p>
         </div>
-      </div>
+      </Card>
 
-      {/* Formulário */}
+      {/* Form */}
       <AnimatePresence>
         {showForm && (
           <motion.form
@@ -164,77 +164,77 @@ export default function LocaisPage() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             onSubmit={handleSubmit}
-            className="card p-4 flex flex-col gap-3 overflow-hidden"
+            className="overflow-hidden"
           >
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-bold text-slate-700 m-0">
-                {editingId ? "Editar Local" : "Novo Local"}
-              </h3>
-              <button type="button" onClick={resetForm} className="bg-transparent border-none cursor-pointer p-1">
-                <X className="w-4 h-4 text-slate-400" />
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="float-group">
-                <input id="loc-name" placeholder=" " value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="input float-input float-sm" />
-                <label htmlFor="loc-name" className="float-label float-label-sm">Nome</label>
+            <Card variant="elevated" className="p-4 flex flex-col gap-3">
+              <div className="flex justify-between items-center">
+                <h3 className="text-[14px] font-bold m-0 text-[var(--text-primary)]">
+                  {editingId ? "Editar Local" : "Novo Local"}
+                </h3>
+                <button type="button" onClick={resetForm} className="bg-transparent border-none cursor-pointer p-1 text-[var(--text-muted)]">
+                  <X size={16} />
+                </button>
               </div>
-              <div className="float-group">
-                <input id="loc-code" placeholder=" " value={form.labelCode} onChange={(e) => setForm({ ...form, labelCode: e.target.value })} className="input float-input float-sm" />
-                <label htmlFor="loc-code" className="float-label float-label-sm">Código (ex: ARM-E1)</label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">Nome</label>
+                  <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="input" placeholder="Nome do local" />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">Código</label>
+                  <input value={form.labelCode} onChange={(e) => setForm({ ...form, labelCode: e.target.value })} className="input" placeholder="ex: B1.LE.P1" />
+                </div>
               </div>
-            </div>
-            <div className="float-group">
-              <input id="loc-desc" placeholder=" " value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="input float-input float-sm" />
-              <label htmlFor="loc-desc" className="float-label float-label-sm">Descrição</label>
-            </div>
-            <select value={form.subStockType} onChange={(e) => setForm({ ...form, subStockType: e.target.value as SubStockType })} className="select" style={{ height: 46 }}>
-              <option value="ARMARIO">Armário</option>
-              <option value="MOSTRUARIO">Mostruário</option>
-              <option value="GRUPO_CAMPO">Grupo de Campo</option>
-            </select>
-            <button type="submit" disabled={isPending} className="btn btn-primary">
-              {isPending ? "Salvando..." : editingId ? "Atualizar" : "Cadastrar"}
-            </button>
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">Descrição</label>
+                <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="input" placeholder="Descrição opcional" />
+              </div>
+              <select value={form.subStockType} onChange={(e) => setForm({ ...form, subStockType: e.target.value as SubStockType })} className="select">
+                <option value="ARMARIO">Armário</option>
+                <option value="MOSTRUARIO">Mostruário</option>
+                <option value="GRUPO_CAMPO">Grupo de Campo</option>
+              </select>
+              <Button type="submit" disabled={isPending} loading={isPending} fullWidth>
+                {editingId ? "Atualizar" : "Cadastrar"}
+              </Button>
+            </Card>
           </motion.form>
         )}
       </AnimatePresence>
 
-      {/* Lista */}
+      {/* Locations list */}
       <div className="flex flex-col gap-2">
         {locations.map((loc) => {
-          const iconStyle = subStockIcon[loc.subStockType] || subStockIcon.ARMARIO
+          const iconStyle = subStockIconBg[loc.subStockType] || subStockIconBg.ARMARIO
           return (
-            <div key={loc.id} className="card" style={{ overflow: "hidden" }}>
-              <div style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
-                <div className={`w-10 h-10 rounded-xl ${iconStyle.bg} ${iconStyle.fg} flex items-center justify-center flex-shrink-0`}>
-                  <MapPin className="w-5 h-5" />
+            <Card key={loc.id} variant="elevated" className="overflow-hidden">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", iconStyle)}>
+                  <MapPin size={20} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p style={{ fontSize: 15, fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>{loc.name}</p>
+                  <p className="text-[15px] font-bold m-0 text-[var(--text-primary)]">{loc.name}</p>
                   <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                    {loc.labelCode && (
-                      <span className="badge badge-slate">{loc.labelCode}</span>
-                    )}
-                    <span className={`badge ${subStockBadge[loc.subStockType]}`}>
+                    {loc.labelCode && <Badge variant="slate">{loc.labelCode}</Badge>}
+                    <Badge variant={subStockBadgeVariant[loc.subStockType] || "slate"}>
                       {subStockLabels[loc.subStockType]}
-                    </span>
+                    </Badge>
                   </div>
                   {loc.description && (
-                    <p style={{ fontSize: 11, margin: "4px 0 0", color: "var(--text-muted)" }}>{loc.description}</p>
+                    <p className="text-[11px] m-0 mt-1 text-[var(--text-muted)]">{loc.description}</p>
                   )}
                 </div>
                 <div className="flex gap-1.5">
                   {loc.labelCode && (
                     <button onClick={() => generateQRUrl(loc.labelCode!)} title="Gerar QR Code" className="btn-icon">
-                      <QrCode className="w-4 h-4 text-primary" />
+                      <QrCode size={16} className="text-[var(--color-primary)]" />
                     </button>
                   )}
                   <button onClick={() => handleEdit(loc)} title="Editar" className="btn-icon">
-                    <Edit3 className="w-4 h-4" />
+                    <Edit3 size={16} />
                   </button>
                   <button onClick={() => handleDelete(loc.id)} title="Excluir" className="btn-icon btn-icon-danger">
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </div>
@@ -242,20 +242,27 @@ export default function LocaisPage() {
                 <img
                   src={loc.imageUrl}
                   alt={loc.name}
-                  style={{ width: "100%", height: 100, objectFit: "cover", borderTop: "1px solid var(--border-color)" }}
+                  className="w-full h-[100px] object-cover border-t border-[var(--border-color)]"
                 />
               )}
-            </div>
+            </Card>
           )
         })}
 
         {locations.length === 0 && (
-          <div className="card empty-state">
-            <MapPin className="w-12 h-12 text-slate-200" />
-            <p>Nenhuma localização cadastrada.</p>
-          </div>
+          <Card variant="elevated">
+            <EmptyState
+              icon={<MapPin size={28} />}
+              title="Nenhuma localização"
+              description="Cadastre os armários e locais de armazenamento."
+            />
+          </Card>
         )}
       </div>
     </div>
   )
+}
+
+function Fragment({ children }: { children: React.ReactNode }) {
+  return <>{children}</>
 }

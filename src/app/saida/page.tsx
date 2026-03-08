@@ -9,6 +9,8 @@ import { getRecentItems, addRecentItem, type RecentItem } from "@/lib/recent-ite
 import { getLocations } from "@/actions/location.actions"
 import { registerStockOut } from "@/actions/inventory.actions"
 import ItemImage from "@/components/ItemImage"
+import { Card, Button, Alert } from "@/components/ui"
+import { cn } from "@/lib/cn"
 import type { MovementType, SubStockType } from "@/lib/types"
 
 type ItemResult = {
@@ -47,33 +49,18 @@ export default function SaidaPage() {
   const [error, setError] = useState("")
   const [recentItems, setRecentItems] = useState<RecentItem[]>([])
 
-  // Load recent items
-  useEffect(() => {
-    setRecentItems(getRecentItems())
-  }, [])
+  useEffect(() => { setRecentItems(getRecentItems()) }, [])
 
-  // Load locations
   useEffect(() => {
     if (user?.congregationId) {
       getLocations(user.congregationId).then((locs) => setLocations(locs as LocationResult[]))
     }
   }, [user?.congregationId])
 
-  // Pre-select item from query param
   useEffect(() => {
     if (preselectedItemId && !selectedItem) {
       getItemById(preselectedItemId).then((item) => {
-        if (item) {
-          const mapped: ItemResult = {
-            id: item.id,
-            pubCode: item.pubCode,
-            langCode: item.langCode,
-            title: item.title,
-            imageUrl: item.imageUrl,
-            defaultLocationId: item.defaultLocationId,
-          }
-          handleSelectItem(mapped)
-        }
+        if (item) handleSelectItem(item as ItemResult)
       })
     }
   }, [preselectedItemId])
@@ -99,7 +86,6 @@ export default function SaidaPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!selectedItem || !user?.id || !user?.congregationId) return
-
     setError("")
     startTransition(async () => {
       const typeMap: Record<DestinationType, MovementType> = {
@@ -141,31 +127,31 @@ export default function SaidaPage() {
     { value: "PUBLICADORES", label: "Publicadores",   icon: Users,        color: "var(--color-primary)" },
     { value: "GRUPO_CAMPO",  label: "Grupo de Campo", icon: MapPin,       color: "var(--color-warn)" },
     { value: "CARRINHO",     label: "Carrinho",        icon: ShoppingCart, color: "var(--color-success)" },
-    { value: "EXPOSITOR",    label: "Expositor",       icon: BookOpen,     color: "var(--color-info)" },
+    { value: "EXPOSITOR",    label: "Expositor",       icon: BookOpen,     color: "#8e8e93" },
   ]
 
   return (
     <div className="animate-in flex flex-col gap-5">
       <div>
-        <h2 className="page-title">Registro de Saída</h2>
-        <p className="page-subtitle">Retire publicações do estoque.</p>
+        <h1 className="text-[22px] font-bold tracking-tight m-0 text-[var(--text-primary)]">Registro de Saída</h1>
+        <p className="text-[14px] mt-0.5 m-0 text-[var(--text-muted)]">Retire publicações do estoque.</p>
       </div>
 
-      {/* Sucesso */}
+      {/* Success */}
       {success && (
-        <div className="card p-6 text-center animate-in" style={{ background: "color-mix(in srgb, var(--color-success) 5%, var(--surface-card))", borderColor: "var(--color-success)" }}>
-          <CheckCircle2 className="w-10 h-10 mx-auto mb-2" style={{ color: "var(--color-success)" }} />
-          <p className="font-bold text-base m-0" style={{ color: "var(--color-success)" }}>Saída registrada!</p>
-        </div>
+        <Card variant="elevated" className="p-6 text-center animate-in border-[var(--color-success)]">
+          <CheckCircle2 size={40} className="mx-auto mb-2 text-[var(--color-success)]" />
+          <p className="font-bold text-[16px] m-0 text-[var(--color-success)]">Saída registrada!</p>
+        </Card>
       )}
 
-      {/* Recentes */}
+      {/* Recent items pills */}
       {!success && recentItems.length > 0 && !selectedItem && (
         <div>
-          <p className="flex items-center gap-1.5 m-0 mb-2" style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>
+          <p className="flex items-center gap-1.5 m-0 mb-2 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
             <Clock size={12} /> Recentes
           </p>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-1.5 flex-wrap">
             {recentItems.map((ri) => (
               <button
                 key={ri.id}
@@ -175,16 +161,11 @@ export default function SaidaPage() {
                     if (item) handleSelectItem(item as ItemResult)
                   })
                 }}
-                className="border cursor-pointer"
-                style={{
-                  padding: "6px 12px",
-                  borderRadius: "20px",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  background: "var(--surface-card)",
-                  borderColor: "var(--border-color)",
-                  color: "var(--text-secondary)",
-                }}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-[12px] font-semibold border cursor-pointer",
+                  "bg-[var(--surface-card)] border-[var(--border-color)] text-[var(--text-secondary)]",
+                  "transition-colors duration-150 active:bg-[var(--surface-bg)]"
+                )}
               >
                 {ri.pubCode}
               </button>
@@ -195,31 +176,33 @@ export default function SaidaPage() {
 
       {!success && (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {/* Busca de item */}
+          {/* Item search */}
           <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: "var(--text-muted)" }} />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-[var(--text-muted)]" />
             <input
               type="text"
               placeholder="Buscar publicação..."
               value={query}
               onChange={(e) => handleSearch(e.target.value)}
-              className="input"
-              style={{ paddingLeft: "2.5rem" }}
+              className="input pl-10"
             />
             {results.length > 0 && (
-              <div className="absolute top-full mt-1 left-0 right-0 z-50 rounded-md border shadow-md max-h-52 overflow-auto" style={{ background: "var(--surface-card)", borderColor: "var(--border-color)" }}>
-                {results.map((item) => (
+              <div className="absolute top-full mt-1 left-0 right-0 z-50 bg-[var(--surface-card)] rounded-[10px] border border-[var(--border-color)] shadow-md max-h-52 overflow-auto">
+                {results.map((item, i) => (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => handleSelectItem(item)}
-                    className="w-full p-3 border-none text-left cursor-pointer flex items-center gap-3 transition-colors"
-                    style={{ background: "transparent", borderBottom: "1px solid var(--border-color)" }}
+                    className={cn(
+                      "w-full p-3 border-none text-left cursor-pointer flex items-center gap-3 bg-transparent",
+                      "transition-colors duration-100 active:bg-[var(--surface-bg)]",
+                      i < results.length - 1 && "border-b border-[var(--border-color)]"
+                    )}
                   >
                     <ItemImage src={item.imageUrl} alt={item.title} pubCode={item.pubCode} langCode={item.langCode} width={30} height={40} />
                     <div>
-                      <p className="m-0 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{item.title}</p>
-                      <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{item.pubCode} - {item.langCode}</span>
+                      <p className="m-0 text-[14px] font-semibold text-[var(--text-primary)]">{item.title}</p>
+                      <span className="text-[10px] text-[var(--text-muted)]">{item.pubCode} - {item.langCode}</span>
                     </div>
                   </button>
                 ))}
@@ -229,18 +212,18 @@ export default function SaidaPage() {
 
           {selectedItem && (
             <div className="flex flex-col gap-4 animate-in">
-              {/* Item selecionado */}
-              <div className="card p-3 flex gap-3 items-center">
+              {/* Selected item */}
+              <Card variant="elevated" className="p-3 flex gap-3 items-center">
                 <ItemImage src={selectedItem.imageUrl} alt={selectedItem.title} pubCode={selectedItem.pubCode} langCode={selectedItem.langCode} width={36} height={48} />
                 <div>
-                  <p className="m-0 font-bold text-sm" style={{ color: "var(--text-primary)" }}>{selectedItem.title}</p>
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>{selectedItem.pubCode}</span>
+                  <p className="m-0 font-bold text-[14px] text-[var(--text-primary)]">{selectedItem.title}</p>
+                  <span className="text-[12px] text-[var(--text-muted)]">{selectedItem.pubCode}</span>
                 </div>
-              </div>
+              </Card>
 
-              {/* Local de origem */}
+              {/* Source location */}
               <div>
-                <label className="section-label mb-1.5 block">Local de Origem</label>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">Local de Origem</label>
                 <select
                   value={fromLocationId}
                   onChange={(e) => setFromLocationId(e.target.value)}
@@ -254,9 +237,9 @@ export default function SaidaPage() {
                 </select>
               </div>
 
-              {/* Quantidade */}
+              {/* Quantity */}
               <div>
-                <label className="section-label mb-1.5 block" htmlFor="saida-qty">Quantidade</label>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block" htmlFor="saida-qty">Quantidade</label>
                 <input
                   id="saida-qty"
                   type="number"
@@ -264,13 +247,13 @@ export default function SaidaPage() {
                   value={quantity}
                   onChange={(e) => setQuantity(Number(e.target.value))}
                   required
-                  className="input text-center text-lg font-bold"
+                  className="input text-center text-[18px] font-bold"
                 />
               </div>
 
-              {/* Destino */}
+              {/* Destination */}
               <div>
-                <label className="section-label mb-2 block">Destino</label>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2 block">Destino</label>
                 <div className="grid grid-cols-4 gap-2">
                   {destOptions.map((opt) => {
                     const Icon = opt.icon
@@ -280,13 +263,15 @@ export default function SaidaPage() {
                         key={opt.value}
                         type="button"
                         onClick={() => setDestination(opt.value)}
-                        className="p-3 rounded-md flex flex-col items-center gap-2 cursor-pointer transition-all border"
-                        style={{
-                          background: selected ? "var(--surface-bg)" : "var(--surface-card)",
-                          borderColor: selected ? opt.color : "var(--border-color)",
-                        }}
+                        className={cn(
+                          "p-3 rounded-[10px] flex flex-col items-center gap-2 cursor-pointer transition-all border",
+                          selected
+                            ? "bg-[var(--surface-bg)]"
+                            : "bg-[var(--surface-card)] border-[var(--border-color)]"
+                        )}
+                        style={{ borderColor: selected ? opt.color : undefined }}
                       >
-                        <Icon className="w-5 h-5" style={{ color: selected ? opt.color : "var(--text-muted)" }} />
+                        <Icon size={20} style={{ color: selected ? opt.color : "var(--text-muted)" }} />
                         <span className="text-[10px] font-bold" style={{ color: selected ? opt.color : "var(--text-muted)" }}>
                           {opt.label}
                         </span>
@@ -296,15 +281,18 @@ export default function SaidaPage() {
                 </div>
               </div>
 
-              {error && <p className="alert-error m-0">{error}</p>}
+              {error && <Alert variant="error">{error}</Alert>}
 
-              <button
+              <Button
                 type="submit"
+                variant="danger"
                 disabled={isPending}
-                className="btn w-full btn-danger"
+                loading={isPending}
+                fullWidth
+                size="lg"
               >
                 {isPending ? "Processando..." : `Registrar Saída (${quantity})`}
-              </button>
+              </Button>
             </div>
           )}
         </form>

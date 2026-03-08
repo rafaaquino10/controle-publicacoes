@@ -2,7 +2,11 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Package, ArrowDownLeft, ArrowUpRight, FileText, Settings, ClipboardList, BookOpen, Truck } from "lucide-react"
+import {
+  Home, Package, ArrowDownLeft, ArrowUpRight, Truck,
+  FileText, Settings, ClipboardList, BookOpen,
+} from "lucide-react"
+import { cn } from "@/lib/cn"
 import ThemeToggleCompact from "./ThemeToggleCompact"
 
 type NavItem = {
@@ -12,16 +16,41 @@ type NavItem = {
   ssOnly?: boolean
 }
 
-const navItems: NavItem[] = [
-  { href: "/",              icon: Home,         label: "Início"         },
-  { href: "/estoque",       icon: Package,      label: "Estoque"        },
-  { href: "/catalogo",      icon: BookOpen,     label: "Catálogo",      ssOnly: true },
-  { href: "/entrada",       icon: ArrowDownLeft, label: "Entrada"        },
-  { href: "/remessas",      icon: Truck,        label: "Remessas"       },
-  { href: "/saida",         icon: ArrowUpRight, label: "Saída"          },
-  { href: "/pedidos-nominais", icon: ClipboardList, label: "Pedidos Nominais" },
-  { href: "/relatorios",    icon: FileText,     label: "Relatório",     ssOnly: true },
-  { href: "/configuracoes", icon: Settings,     label: "Configurações"  },
+type NavSection = {
+  title: string
+  items: NavItem[]
+}
+
+const sections: NavSection[] = [
+  {
+    title: "Principal",
+    items: [
+      { href: "/", icon: Home, label: "Início" },
+      { href: "/estoque", icon: Package, label: "Estoque" },
+    ],
+  },
+  {
+    title: "Operações",
+    items: [
+      { href: "/entrada", icon: ArrowDownLeft, label: "Entrada" },
+      { href: "/saida", icon: ArrowUpRight, label: "Saída" },
+      { href: "/remessas", icon: Truck, label: "Remessas" },
+    ],
+  },
+  {
+    title: "Gestão",
+    items: [
+      { href: "/catalogo", icon: BookOpen, label: "Catálogo", ssOnly: true },
+      { href: "/pedidos-nominais", icon: ClipboardList, label: "Pedidos Nominais" },
+      { href: "/relatorios", icon: FileText, label: "Relatório", ssOnly: true },
+    ],
+  },
+  {
+    title: "Sistema",
+    items: [
+      { href: "/configuracoes", icon: Settings, label: "Configurações" },
+    ],
+  },
 ]
 
 export default function SideNav({
@@ -41,73 +70,69 @@ export default function SideNav({
   }
 
   return (
-    <aside
-      className="hidden md:flex flex-col flex-shrink-0 h-dvh sticky top-0 border-r"
-      style={{ width: "240px", background: "var(--surface-card)", borderColor: "var(--border-color)" }}
-    >
-      {/* Logo */}
-      <div style={{ padding: "20px" }}>
-        <div style={{ fontWeight: 700, fontSize: "15px", color: "var(--text-primary)" }}>
-          Controle de Publicações
-        </div>
-        <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "2px" }}>
-          Vila Yara
-        </div>
+    <aside className="hidden md:flex flex-col flex-shrink-0 h-dvh sticky top-0 border-r border-[var(--border-color)] bg-[var(--surface-card)] w-[260px]">
+      {/* Brand area */}
+      <div className="bg-[var(--color-primary)] px-5 py-4">
+        <div className="text-white font-bold text-[16px] tracking-tight">Publicações</div>
+        <div className="text-white/70 text-[12px] mt-0.5">Vila Yara</div>
       </div>
 
-      {/* Nav Links */}
-      <nav className="flex-1 flex flex-col" style={{ padding: "8px 12px", gap: "2px" }}>
-        {navItems.filter(item => !item.ssOnly || isSS).map((item) => {
-          const Icon = item.icon
-          const active = isActive(item.href)
+      {/* Nav sections */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+        {sections.map((section) => {
+          const visibleItems = section.items.filter(item => !item.ssOnly || isSS)
+          if (visibleItems.length === 0) return null
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="no-underline flex items-center"
-              style={{
-                gap: "8px",
-                padding: "10px 16px",
-                borderRadius: "6px",
-                fontSize: "13px",
-                fontWeight: active ? 600 : 500,
-                color: active ? "var(--color-primary)" : "var(--text-secondary)",
-                background: active ? "rgba(30, 58, 95, 0.1)" : "transparent",
-                borderLeft: active ? "3px solid var(--color-primary)" : "3px solid transparent",
-                transition: "all 0.15s ease",
-              }}
-            >
-              <Icon size={20} strokeWidth={active ? 2.5 : 2} />
-              {item.label}
-            </Link>
+            <div key={section.title}>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] px-3 mb-1.5">
+                {section.title}
+              </p>
+              <div className="space-y-0.5">
+                {visibleItems.map((item) => {
+                  const Icon = item.icon
+                  const active = isActive(item.href)
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "no-underline flex items-center gap-2.5 px-3 py-2 rounded-lg text-[14px] transition-all duration-150",
+                        active
+                          ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-semibold"
+                          : "text-[var(--text-secondary)] hover:bg-[var(--surface-bg)] font-medium"
+                      )}
+                    >
+                      <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
+                      {item.label}
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
           )
         })}
       </nav>
 
       {/* User footer */}
-      <div
-        className="flex items-center gap-3 border-t"
-        style={{ padding: "12px 16px", borderColor: "var(--border-color)" }}
-      >
+      <div className="flex items-center gap-3 border-t border-[var(--border-color)] px-4 py-3">
         {userImage ? (
           <img
             src={userImage}
             alt="Perfil"
-            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+            className="w-9 h-9 rounded-full object-cover flex-shrink-0"
           />
         ) : (
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-            style={{ background: "var(--color-primary)" }}
-          >
+          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 bg-[var(--color-primary)]">
             {userName?.charAt(0)?.toUpperCase() || "U"}
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold m-0 truncate" style={{ color: "var(--text-primary)" }}>
+          <p className="text-[14px] font-semibold m-0 truncate text-[var(--text-primary)]">
             {userName || "Usuário"}
           </p>
-          {isSS && <span className="badge badge-navy">SS</span>}
+          {isSS && (
+            <span className="text-[11px] font-semibold text-[var(--color-primary)]">SS</span>
+          )}
         </div>
         <ThemeToggleCompact />
       </div>

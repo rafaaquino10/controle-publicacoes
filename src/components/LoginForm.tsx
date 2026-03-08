@@ -4,6 +4,7 @@ import { Mail, Lock, Eye, EyeOff } from "lucide-react"
 import { signIn } from "next-auth/react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { Card, Button } from "@/components/ui"
 
 export default function LoginForm() {
   const router = useRouter()
@@ -38,31 +39,25 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="card p-8" style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
-      {/* Cabeçalho */}
+    <Card variant="elevated" className="p-8 shadow-md">
+      {/* Header */}
       <div className="mb-8">
-        <h1 style={{ fontSize: "20px", fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
+        <div className="w-12 h-12 rounded-xl bg-[var(--color-primary)] flex items-center justify-center mb-4">
+          <span className="text-white font-bold text-[18px]">P</span>
+        </div>
+        <h1 className="text-[22px] font-bold m-0 text-[var(--text-primary)]">
           Vila Yara
         </h1>
-        <p style={{ fontSize: "12px", margin: "4px 0 0", color: "var(--text-muted)" }}>
+        <p className="text-[13px] m-0 mt-1 text-[var(--text-muted)]">
           Gestão de Publicações
         </p>
       </div>
 
       <div className="flex flex-col gap-4">
-        {/* Botão Google */}
+        {/* Google button */}
         <button
           onClick={handleGoogleSignIn}
-          className="w-full flex items-center justify-center gap-3 border cursor-pointer transition-all active:scale-[0.98]"
-          style={{
-            height: "44px",
-            borderRadius: "6px",
-            background: "var(--surface-card)",
-            borderColor: "var(--border-color)",
-            color: "var(--text-secondary)",
-            fontSize: "13px",
-            fontWeight: 500,
-          }}
+          className="w-full h-11 flex items-center justify-center gap-3 rounded-[10px] border border-[var(--border-color)] bg-[var(--surface-card)] text-[var(--text-secondary)] text-[14px] font-medium cursor-pointer transition-all active:scale-[0.98]"
         >
           <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -75,77 +70,62 @@ export default function LoginForm() {
 
         <div className="divider"><span>ou</span></div>
 
-        {/* Botão abrir formulário */}
         {!showCredentials && (
           <button
             onClick={() => setShowCredentials(true)}
-            className="w-full flex items-center justify-center gap-3 cursor-pointer transition-all active:scale-[0.98] border-none"
-            style={{
-              height: "44px",
-              borderRadius: "6px",
-              background: "var(--surface-bg)",
-              color: "var(--text-secondary)",
-              fontSize: "13px",
-              fontWeight: 500,
-            }}
+            className="w-full h-11 flex items-center justify-center gap-3 rounded-[10px] border-none bg-[var(--surface-bg)] text-[var(--text-secondary)] text-[14px] font-medium cursor-pointer transition-all active:scale-[0.98]"
           >
-            <Mail className="w-4 h-4" />
+            <Mail size={16} />
             Entrar com Email e Senha
           </button>
         )}
 
-        {/* Formulário de credenciais */}
         {showCredentials && (
           <form onSubmit={handleCredentialsSignIn} className="flex flex-col gap-3 animate-in">
             <div>
-              <label className="section-label mb-1.5 block" htmlFor="login-email">Email</label>
+              <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">Email</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: "var(--text-muted)" }} />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-[var(--text-muted)]" />
                 <input
-                  id="login-email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="input"
-                  style={{ paddingLeft: "2.5rem" }}
+                  className="input pl-10"
                 />
               </div>
             </div>
             <div>
-              <label className="section-label mb-1.5 block" htmlFor="login-password">Senha</label>
+              <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">Senha</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: "var(--text-muted)" }} />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-[var(--text-muted)]" />
                 <input
-                  id="login-password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="input"
-                  style={{ paddingLeft: "2.5rem", paddingRight: "2.5rem" }}
+                  className="input pl-10 pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer p-0"
-                  style={{ color: "var(--text-muted)" }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer p-0 text-[var(--text-muted)]"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
             {error && (
-              <p className="text-xs text-center font-medium m-0" style={{ color: "var(--color-error)" }}>
+              <p className="text-[12px] text-center font-medium m-0 text-[var(--color-error)]">
                 {error}
               </p>
             )}
-            <button type="submit" disabled={loading} className="btn btn-primary w-full">
-              {loading ? "Entrando..." : "Entrar"}
-            </button>
+            <Button type="submit" disabled={loading} loading={loading} fullWidth>
+              Entrar
+            </Button>
           </form>
         )}
       </div>
-    </div>
+    </Card>
   )
 }

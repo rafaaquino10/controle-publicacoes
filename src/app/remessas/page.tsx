@@ -2,27 +2,29 @@ import { getOrders } from "@/actions/order.actions"
 import { requireAuth } from "@/lib/auth-utils"
 import Link from "next/link"
 import { Package, Clock, Truck, CheckCircle2, Plus } from "lucide-react"
+import { Card, Badge, Button, EmptyState } from "@/components/ui"
+import { cn } from "@/lib/cn"
 
 export default async function RemessasPage() {
   const user = await requireAuth()
   const congId = user.congregationId || "vila-yara-id"
   const orders = await getOrders(congId)
 
-  const statusConfig: Record<string, { label: string; icon: typeof Clock; badgeClass: string }> = {
-    PENDING: { label: "Pendente", icon: Clock, badgeClass: "badge-amber" },
-    IN_TRANSIT: { label: "Em Trânsito", icon: Truck, badgeClass: "badge-blue" },
-    RECEIVED: { label: "Recebida", icon: CheckCircle2, badgeClass: "badge-green" },
+  const statusConfig: Record<string, { label: string; icon: typeof Clock; variant: "amber" | "blue" | "green" }> = {
+    PENDING: { label: "Pendente", icon: Clock, variant: "amber" },
+    IN_TRANSIT: { label: "Em Trânsito", icon: Truck, variant: "blue" },
+    RECEIVED: { label: "Recebida", icon: CheckCircle2, variant: "green" },
   }
 
   return (
     <div className="animate-in flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="page-title">Remessas</h2>
-          <p className="page-subtitle">{orders.length} remessas registradas</p>
+          <h1 className="text-[22px] font-bold tracking-tight m-0 text-[var(--text-primary)]">Remessas</h1>
+          <p className="text-[14px] mt-0.5 m-0 text-[var(--text-muted)]">{orders.length} remessas registradas</p>
         </div>
-        <Link href="/entrada" className="no-underline btn btn-primary btn-sm">
-          <Plus className="w-4 h-4" /> Nova
+        <Link href="/entrada" className="no-underline">
+          <Button size="sm" icon={<Plus size={16} />}>Nova</Button>
         </Link>
       </div>
 
@@ -35,44 +37,50 @@ export default async function RemessasPage() {
           const totalItems = order.boxes.reduce(
             (sum, box) => sum + box.items.reduce((s, i) => s + i.quantity, 0), 0
           )
+          const allReceived = receivedBoxes === totalBoxes
 
           return (
             <Link
               key={order.id}
               href={`/remessas/${order.id}`}
-              className="no-underline card p-4 flex flex-col gap-3"
+              className="no-underline"
             >
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-extrabold text-base m-0" style={{ color: "var(--text-primary)" }}>
-                    Envio {order.shipmentNumber}
-                  </p>
-                  <p className="text-[11px] m-0 mt-0.5" style={{ color: "var(--text-muted)" }}>
-                    {new Date(order.createdAt).toLocaleDateString("pt-BR")} — {order.type}
-                  </p>
+              <Card variant="interactive" className="p-4 flex flex-col gap-3">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-bold text-[16px] m-0 text-[var(--text-primary)]">
+                      Envio {order.shipmentNumber}
+                    </p>
+                    <p className="text-[11px] m-0 mt-0.5 text-[var(--text-muted)]">
+                      {new Date(order.createdAt).toLocaleDateString("pt-BR")} — {order.type}
+                    </p>
+                  </div>
+                  <Badge variant={config.variant}>
+                    <StatusIcon size={14} />
+                    {config.label}
+                  </Badge>
                 </div>
-                <span className={`badge ${config.badgeClass} flex items-center gap-1`}>
-                  <StatusIcon className="w-3.5 h-3.5" />
-                  {config.label}
-                </span>
-              </div>
 
-              <div className="flex gap-5 text-xs" style={{ color: "var(--text-secondary)" }}>
-                <span><strong style={{ color: "var(--text-primary)" }}>{totalBoxes}</strong> caixa(s)</span>
-                <span><strong style={{ color: "var(--text-primary)" }}>{totalItems}</strong> itens</span>
-                <span style={{ color: receivedBoxes === totalBoxes ? "var(--color-success)" : "var(--color-warning)" }}>
-                  <strong>{receivedBoxes}/{totalBoxes}</strong> recebidas
-                </span>
-              </div>
+                <div className="flex gap-5 text-[12px] text-[var(--text-secondary)]">
+                  <span><strong className="text-[var(--text-primary)]">{totalBoxes}</strong> caixa(s)</span>
+                  <span><strong className="text-[var(--text-primary)]">{totalItems}</strong> itens</span>
+                  <span className={allReceived ? "text-[var(--color-success)]" : "text-[var(--color-warn)]"}>
+                    <strong>{receivedBoxes}/{totalBoxes}</strong> recebidas
+                  </span>
+                </div>
+              </Card>
             </Link>
           )
         })}
 
         {orders.length === 0 && (
-          <div className="card empty-state">
-            <Package className="w-12 h-12" style={{ color: "var(--text-muted)" }} />
-            <p>Nenhuma remessa registrada.</p>
-          </div>
+          <Card variant="elevated">
+            <EmptyState
+              icon={<Package size={28} />}
+              title="Nenhuma remessa"
+              description="Registre entradas para criar remessas."
+            />
+          </Card>
         )}
       </div>
     </div>
