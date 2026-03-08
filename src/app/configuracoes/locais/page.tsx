@@ -226,14 +226,14 @@ export default function LocaisPage() {
                 </div>
                 <div className="flex gap-1.5">
                   {loc.labelCode && (
-                    <button onClick={() => generateQRUrl(loc.labelCode!)} title="Gerar QR Code" className="btn-icon">
+                    <button onClick={() => generateQRUrl(loc.labelCode!)} title="Gerar QR Code" className="w-9 h-9 rounded-lg border border-[var(--border-color)] bg-[var(--surface-card)] text-[var(--text-secondary)] inline-flex items-center justify-center cursor-pointer">
                       <QrCode size={16} className="text-[var(--color-primary)]" />
                     </button>
                   )}
-                  <button onClick={() => handleEdit(loc)} title="Editar" className="btn-icon">
+                  <button onClick={() => handleEdit(loc)} title="Editar" className="w-9 h-9 rounded-lg border border-[var(--border-color)] bg-[var(--surface-card)] text-[var(--text-secondary)] inline-flex items-center justify-center cursor-pointer">
                     <Edit3 size={16} />
                   </button>
-                  <button onClick={() => handleDelete(loc.id)} title="Excluir" className="btn-icon btn-icon-danger">
+                  <button onClick={() => handleDelete(loc.id)} title="Excluir" className="w-9 h-9 rounded-lg border border-[#fecaca] bg-[#fef2f2] text-[#dc2626] dark:border-[#7f1d1d] dark:bg-[#450a0a] dark:text-[#fca5a5] inline-flex items-center justify-center cursor-pointer">
                     <Trash2 size={16} />
                   </button>
                 </div>

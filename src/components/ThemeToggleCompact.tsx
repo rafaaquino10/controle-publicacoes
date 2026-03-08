@@ -9,7 +9,7 @@ export default function ThemeToggleCompact() {
   return (
     <button
       onClick={() => setTheme(resolved === "dark" ? "light" : "dark")}
-      className="btn-icon"
+      className="w-9 h-9 rounded-lg border border-[var(--border-color)] bg-[var(--surface-card)] text-[var(--text-secondary)] inline-flex items-center justify-center cursor-pointer"
       aria-label={resolved === "dark" ? "Modo claro" : "Modo escuro"}
       title={resolved === "dark" ? "Modo claro" : "Modo escuro"}
     >

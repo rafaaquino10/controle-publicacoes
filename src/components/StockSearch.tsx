@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Search, Package } from "lucide-react"
 import Link from "next/link"
 import ItemImage from "@/components/ItemImage"
-import { Input } from "@/components/ui"
+import { Input, Badge } from "@/components/ui"
 import { cn } from "@/lib/cn"
 
 type StockItem = {
@@ -215,19 +215,19 @@ function ItemList({ items }: { items: StockItem[] }) {
                 {item.title}
               </p>
               <div className="flex items-center gap-1.5 mt-1">
-                <span className="badge badge-slate">{item.pubCode}</span>
+                <Badge variant="slate">{item.pubCode}</Badge>
                 <span className="text-[10px] font-semibold uppercase text-[var(--text-muted)]">
                   {item.langCode}
                 </span>
-                {item.isSpecialOrder && <span className="badge badge-amber">Especial</span>}
+                {item.isSpecialOrder && <Badge variant="amber">Especial</Badge>}
               </div>
             </div>
             <div className="text-right flex-shrink-0">
               <p className="text-[18px] font-bold m-0 text-[var(--text-primary)] leading-none tabular-nums">
                 {item.totalQuantity}
               </p>
-              {isZero && <span className="badge badge-red mt-1 inline-block text-[10px]">Zerado</span>}
-              {isLow && <span className="badge badge-amber mt-1 inline-block text-[10px]">Baixo</span>}
+              {isZero && <Badge variant="red" className="mt-1 text-[10px]">Zerado</Badge>}
+              {isLow && <Badge variant="amber" className="mt-1 text-[10px]">Baixo</Badge>}
             </div>
           </Link>
         )

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react"
 import { Camera, XCircle, Loader2, ScanLine, PenLine } from "lucide-react"
+import { Button } from "@/components/ui"
 import { parseLabelText, type LabelData } from "@/lib/label-ocr"
 
 interface LabelScannerProps {
@@ -322,7 +323,9 @@ export default function LabelScanner({ onResult, active = true }: LabelScannerPr
       {/* Manual fallback after 15s */}
       {showManualFallback && phase === "SCANNING" && (
         <div className="flex justify-center animate-in">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               stopScanLoop()
               stopStream()
@@ -337,10 +340,10 @@ export default function LabelScanner({ onResult, active = true }: LabelScannerPr
                 confidence: "none",
               })
             }}
-            className="btn btn-outline btn-sm text-sm flex items-center gap-2"
+            icon={<PenLine className="w-4 h-4" />}
           >
-            <PenLine className="w-4 h-4" /> Preencher manualmente
-          </button>
+            Preencher manualmente
+          </Button>
         </div>
       )}
 
