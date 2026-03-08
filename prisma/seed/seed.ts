@@ -198,6 +198,7 @@ async function main() {
     { code: 'jwcd4', lang: 'E', cat: 'Kit de Ferramentas', format: 'NORMAL', title: 'Business Card — jw.org (English)', spc: false, ord: false, loc: 'b1-le-p1', qty: 15, avg: 3 },
 
     { code: 'inv', lang: 'T', cat: 'Folhetos', format: 'NORMAL', title: 'Convite para Reuniões Cristãs', spc: false, ord: true, loc: 'b1-le-p1', qty: 0, avg: 20 },
+    { code: 'mi26', lang: 'T', cat: 'Folhetos', format: 'NORMAL', title: 'Convite para a Celebração de 2026', spc: false, ord: true, loc: 'b1-le-p1', qty: 0, avg: 0, img: 'https://cms-imgp.jw-cdn.org/img/p/mi26/T/pt/mi26_T_lg.jpg' },
 
     // ── Folhetos ──
     { code: 'T-36', lang: 'T', cat: 'Folhetos', format: 'NORMAL', title: 'O Que é o Reino de Deus?', spc: false, ord: true, loc: 'b1-le-p1', qty: 0, avg: 10, img: 'https://cms-imgp.jw-cdn.org/img/p/T-36/T/pt/T-36_T_lg.jpg' },

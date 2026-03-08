@@ -163,6 +163,139 @@ export async function getOrderByShipmentNumber(shipmentNumber: string) {
   }
 }
 
+// ─── Busca inteligente para fluxo de entrada ────────────────────────
+export async function findPendingShipment(barcode: string) {
+  try {
+    // Limpar barcode: remover sufixos como -6, espaços, etc.
+    const cleaned = barcode.replace(/[-\s].*/g, "").trim()
+
+    // Buscar em Orders pendentes ou em trânsito
+    const order = await prisma.order.findFirst({
+      where: {
+        shipmentNumber: cleaned,
+        status: { in: ["PENDING", "IN_TRANSIT"] },
+      },
+      include: {
+        boxes: {
+          include: { items: { include: { item: true } } },
+          orderBy: { boxNumber: "asc" },
+        },
+      },
+    })
+
+    if (!order) return { found: false as const }
+
+    // Tentar identificar caixa específica pelo sufixo do barcode (ex: -6 = caixa 6)
+    const suffixMatch = barcode.match(/-(\d+)$/)
+    const boxHint = suffixMatch ? parseInt(suffixMatch[1]) : null
+
+    return {
+      found: true as const,
+      order: {
+        id: order.id,
+        shipmentNumber: order.shipmentNumber,
+        type: order.type,
+        status: order.status,
+        boxes: order.boxes.map((box) => ({
+          id: box.id,
+          boxNumber: box.boxNumber,
+          isReceived: box.isReceived,
+          items: box.items.map((oi) => ({
+            id: oi.id,
+            quantity: oi.quantity,
+            item: {
+              id: oi.item.id,
+              pubCode: oi.item.pubCode,
+              langCode: oi.item.langCode,
+              title: oi.item.title,
+              imageUrl: oi.item.imageUrl,
+            },
+          })),
+        })),
+      },
+      boxHint,
+    }
+  } catch (error) {
+    console.error("Erro ao buscar remessa pendente:", error)
+    return { found: false as const, error: "Erro na busca." }
+  }
+}
+
+// ─── Entrada rápida (sem remessa pré-cadastrada) ─────────────────────
+export async function quickStockEntry(data: {
+  pubCode: string
+  langCode: string
+  quantity: number
+  congregationId: string
+  userId: string
+}) {
+  try {
+    // Buscar item por pubCode + langCode (formato NORMAL como padrão)
+    const item = await prisma.item.findFirst({
+      where: {
+        pubCode: { equals: data.pubCode, mode: "insensitive" },
+        langCode: data.langCode,
+      },
+    })
+
+    if (!item) {
+      return { success: false, error: `Publicação "${data.pubCode}-${data.langCode}" não encontrada no catálogo.` }
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      // Criar movimentação de entrada
+      await tx.stockMovement.create({
+        data: {
+          itemId: item.id,
+          congregationId: data.congregationId,
+          userId: data.userId,
+          locationId: item.defaultLocationId,
+          type: "RECEIVE_SHIPMENT",
+          quantity: data.quantity,
+          notes: `Entrada rápida — ${data.pubCode}-${data.langCode} ×${data.quantity}`,
+        },
+      })
+
+      // Upsert inventário
+      if (item.defaultLocationId) {
+        await tx.inventory.upsert({
+          where: {
+            itemId_congregationId_locationId: {
+              itemId: item.id,
+              congregationId: data.congregationId,
+              locationId: item.defaultLocationId,
+            },
+          },
+          update: { currentQuantity: { increment: data.quantity } },
+          create: {
+            itemId: item.id,
+            congregationId: data.congregationId,
+            locationId: item.defaultLocationId,
+            currentQuantity: data.quantity,
+          },
+        })
+      }
+
+      revalidatePath("/estoque")
+      revalidatePath("/entrada")
+      return {
+        success: true,
+        item: {
+          id: item.id,
+          pubCode: item.pubCode,
+          langCode: item.langCode,
+          title: item.title,
+          imageUrl: item.imageUrl,
+        },
+        quantity: data.quantity,
+      }
+    })
+  } catch (error) {
+    console.error("Erro na entrada rápida:", error)
+    return { success: false, error: "Erro ao registrar entrada." }
+  }
+}
+
 export async function updateOrderStatus(orderId: string, status: "IN_TRANSIT" | "RECEIVED") {
   try {
     await prisma.order.update({

@@ -1,133 +1,136 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { Html5Qrcode } from "html5-qrcode"
-import { ScanLine, ImageUp, XCircle, CheckCircle2 } from "lucide-react"
+import { ScanLine, XCircle, CheckCircle2 } from "lucide-react"
 
 interface SmartScannerProps {
-  onScanSuccess: (code: string) => void
-  onShipmentDetected?: (data: { shipmentNumber: string; boxInfo?: string }) => void
+  onScanResult: (data: { raw: string; shipmentNumber: string; boxHint?: number }) => void
+  continuous?: boolean
+  active?: boolean
 }
 
-export default function SmartScanner({ onScanSuccess, onShipmentDetected }: SmartScannerProps) {
-  const [activeMode, setActiveMode] = useState<"CAMERA" | "FILE" | null>(null)
-  const [scanResult, setScanResult] = useState<string | null>(null)
+function parseBarcode(raw: string): { shipmentNumber: string; boxHint?: number } {
+  const trimmed = raw.trim()
+
+  // Extract box hint from suffix like -6 (Caixa 6 de 8)
+  const suffixMatch = trimmed.match(/-(\d+)$/)
+  const boxHint = suffixMatch ? parseInt(suffixMatch[1]) : undefined
+
+  // Clean shipment number: remove suffix
+  const shipmentNumber = trimmed.replace(/-\d+$/, "").trim()
+
+  return { shipmentNumber, boxHint }
+}
+
+export default function SmartScanner({ onScanResult, continuous = true, active = true }: SmartScannerProps) {
+  const [isScanning, setIsScanning] = useState(false)
   const [errorDesc, setErrorDesc] = useState("")
-
   const scannerRef = useRef<Html5Qrcode | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const mountedRef = useRef(true)
+  const startingRef = useRef(false)
 
-  useEffect(() => {
-    return () => {
-      if (scannerRef.current?.isScanning) {
-        scannerRef.current.stop().catch(console.error)
-      }
-    }
-  }, [])
-
-  function parseBarcode(code: string) {
-    const shipmentMatch = code.match(/(?:ENVIO|ENV|SHIPMENT)\s*[:#]?\s*(\d+)/i)
-    const boxMatch = code.match(/(?:Box|Caixa|CX)\s*(\d+)\s*(?:of|de)\s*(\d+)/i)
-
-    if (shipmentMatch && onShipmentDetected) {
-      onShipmentDetected({
-        shipmentNumber: shipmentMatch[1],
-        boxInfo: boxMatch ? `Caixa ${boxMatch[1]} de ${boxMatch[2]}` : undefined,
-      })
-    }
-
-    onScanSuccess(code)
-  }
-
-  const startCamera = async () => {
-    setActiveMode("CAMERA")
+  const startCamera = useCallback(async () => {
+    if (startingRef.current || !mountedRef.current) return
+    startingRef.current = true
     setErrorDesc("")
-    setScanResult(null)
-
-    if (!scannerRef.current) {
-      scannerRef.current = new Html5Qrcode("reader")
-    }
 
     try {
+      if (!scannerRef.current) {
+        scannerRef.current = new Html5Qrcode("reader")
+      }
+
+      // Stop if already scanning
+      if (scannerRef.current.isScanning) {
+        await scannerRef.current.stop()
+      }
+
       await scannerRef.current.start(
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 250, height: 100 } },
         (decodedText) => {
-          setScanResult(decodedText)
-          if (scannerRef.current?.isScanning) scannerRef.current.stop()
-          parseBarcode(decodedText)
+          if (scannerRef.current?.isScanning) {
+            scannerRef.current.stop().catch(() => {})
+          }
+          setIsScanning(false)
+
+          const parsed = parseBarcode(decodedText)
+          onScanResult({ raw: decodedText, ...parsed })
         },
         () => {}
       )
+
+      if (mountedRef.current) setIsScanning(true)
     } catch {
-      setErrorDesc("Câmera não autorizada ou indisponível.")
+      if (mountedRef.current) setErrorDesc("Camera nao autorizada ou indisponivel.")
+    } finally {
+      startingRef.current = false
     }
-  }
+  }, [onScanResult])
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    setActiveMode("FILE")
-    setErrorDesc("")
-    setScanResult(null)
-
-    const html5qrCode = new Html5Qrcode("reader-hidden")
-    try {
-      const decodedText = await html5qrCode.scanFileV2(file, true)
-      setScanResult(decodedText.decodedText)
-      parseBarcode(decodedText.decodedText)
-    } catch {
-      setErrorDesc("Nenhum código legível encontrado na imagem.")
-    }
-  }
-
-  const stopScanner = () => {
+  const stopCamera = useCallback(async () => {
     if (scannerRef.current?.isScanning) {
-      scannerRef.current.stop().catch(console.error)
+      await scannerRef.current.stop().catch(() => {})
     }
-    setActiveMode(null)
-  }
+    setIsScanning(false)
+  }, [])
 
-  const resetScanner = () => {
-    setScanResult(null)
-    setErrorDesc("")
-    setActiveMode(null)
-  }
+  // Auto-start on mount when active
+  useEffect(() => {
+    mountedRef.current = true
+    if (active) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        if (mountedRef.current) startCamera()
+      }, 300)
+      return () => {
+        clearTimeout(timer)
+        mountedRef.current = false
+        if (scannerRef.current?.isScanning) {
+          scannerRef.current.stop().catch(() => {})
+        }
+      }
+    } else {
+      stopCamera()
+    }
+    return () => {
+      mountedRef.current = false
+      if (scannerRef.current?.isScanning) {
+        scannerRef.current.stop().catch(() => {})
+      }
+    }
+  }, [active, startCamera, stopCamera])
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="glass-card overflow-hidden relative min-h-[260px] flex items-center justify-center">
-        {!activeMode && !scanResult && (
+    <div className="flex flex-col gap-3">
+      <div className="overflow-hidden relative rounded-xl" style={{ minHeight: "220px", background: "var(--surface-card)" }}>
+        {!isScanning && !errorDesc && (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10" style={{ color: "var(--text-muted)" }}>
-            <ScanLine className="w-16 h-16 mb-4 opacity-50" />
-            <p className="font-bold text-lg m-0" style={{ color: "var(--text-secondary)" }}>Hub Scanner</p>
-            <p className="text-sm m-0 mt-1" style={{ color: "var(--text-muted)" }}>Centralize o código de barras da Nota de Envio na tela.</p>
+            <ScanLine className="w-12 h-12 mb-3 opacity-50 animate-pulse" />
+            <p className="text-sm font-medium m-0">Iniciando camera...</p>
           </div>
         )}
 
-        <div id="reader" className={`w-full ${activeMode === "CAMERA" && !scanResult ? "block" : "hidden"}`}></div>
-        <div id="reader-hidden" className="hidden"></div>
+        <div id="reader" className={`w-full ${isScanning ? "block" : "hidden"}`}></div>
 
-        {scanResult && (
-          <div
-            className="absolute inset-0 flex flex-col items-center justify-center text-white z-20 animate-in cursor-pointer"
-            style={{ background: "rgba(5, 150, 105, 0.9)" }}
-            onClick={resetScanner}
-          >
-            <CheckCircle2 className="w-16 h-16 mb-2" />
-            <p className="text-xl font-black m-0">{scanResult}</p>
-            <p className="font-medium text-sm m-0 mt-1" style={{ opacity: 0.8 }}>Código Capturado - Toque para escanear novamente</p>
+        {isScanning && (
+          <div className="absolute bottom-3 left-0 right-0 flex justify-center z-10">
+            <span
+              className="text-xs font-bold px-3 py-1.5 rounded-full"
+              style={{ background: "rgba(0,0,0,0.6)", color: "white" }}
+            >
+              Centralize o codigo de barras
+            </span>
           </div>
         )}
 
         {errorDesc && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6 text-center z-20 animate-in" style={{ background: "rgba(220, 38, 38, 0.9)" }}>
-            <XCircle className="w-14 h-14 mb-2" />
-            <p className="font-bold m-0">{errorDesc}</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6 text-center z-20" style={{ background: "rgba(220, 38, 38, 0.9)" }}>
+            <XCircle className="w-10 h-10 mb-2" />
+            <p className="font-bold text-sm m-0">{errorDesc}</p>
             <button
-              onClick={() => { setErrorDesc(""); setActiveMode(null) }}
-              className="mt-4 px-4 py-2 rounded-lg text-sm font-bold border-none cursor-pointer"
+              onClick={() => { setErrorDesc(""); startCamera() }}
+              className="mt-3 px-4 py-2 rounded-lg text-sm font-bold border-none cursor-pointer"
               style={{ background: "rgba(255,255,255,0.2)", color: "white" }}
             >
               Tentar Novamente
@@ -136,34 +139,16 @@ export default function SmartScanner({ onScanSuccess, onShipmentDetected }: Smar
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      {isScanning && (
         <button
-          onClick={activeMode === "CAMERA" ? stopScanner : startCamera}
-          className="btn w-full"
-          style={{
-            height: "48px",
-            borderRadius: "10px",
-            background: activeMode === "CAMERA" ? "var(--color-error)" : "var(--color-primary)",
-            color: "white",
-          }}
+          onClick={stopCamera}
+          className="btn w-full text-sm"
+          style={{ height: "40px", borderRadius: "10px", background: "var(--color-error)", color: "white" }}
         >
-          {activeMode === "CAMERA" ? <XCircle className="w-5 h-5" /> : <ScanLine className="w-5 h-5" />}
-          {activeMode === "CAMERA" ? "Cancelar" : "Câmera ao Vivo"}
+          <XCircle className="w-4 h-4" />
+          Parar Scanner
         </button>
-
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="btn btn-outline w-full"
-          style={{ height: "48px", borderRadius: "10px" }}
-        >
-          <ImageUp className="w-5 h-5" style={{ color: "var(--color-primary)" }} />
-          Usar Galeria
-        </button>
-        <input
-          type="file" ref={fileInputRef} onChange={handleFileUpload}
-          accept="image/*" className="hidden"
-        />
-      </div>
+      )}
     </div>
   )
 }
