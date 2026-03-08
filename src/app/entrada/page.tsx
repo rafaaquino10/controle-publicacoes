@@ -2,7 +2,8 @@
 
 import { useState, useTransition, useCallback, useRef } from "react"
 import { useSession } from "next-auth/react"
-import SmartScanner from "@/components/SmartScanner"
+import LabelScanner from "@/components/LabelScanner"
+import type { LabelData } from "@/lib/label-ocr"
 import ItemImage from "@/components/ItemImage"
 import {
   Package, CheckCircle2, Loader2, AlertTriangle,
@@ -135,29 +136,46 @@ export default function EntradaPage() {
     }
   }
 
-  // ─── Scan handlers ────────────────────────────────────
-  const handleScanResult = useCallback((data: { raw: string; shipmentNumber: string; boxHint?: number }) => {
-    setScannerActive(false)
+  // ─── OCR / Label handlers ────────────────────────────
+  const handleLabelResult = useCallback((data: LabelData) => {
     setError("")
 
-    startTransition(async () => {
-      const result = await findPendingShipment(data.raw)
+    if (data.confidence === "none") {
+      setError("Não foi possível ler a etiqueta. Tente novamente ou preencha manualmente.")
+      return
+    }
 
-      if (result.found && result.order) {
-        setOrder(result.order)
-        const unreceived = result.order.boxes.filter((b) => !b.isReceived)
-        if (data.boxHint) {
-          const hinted = unreceived.find((b) => b.boxNumber.includes(`${data.boxHint}`))
-          setSelectedBox(hinted || unreceived[0] || null)
+    // Pre-fill quick entry fields with whatever OCR found
+    if (data.pubCode) setQuickPubCode(data.pubCode)
+    if (data.langCode) setQuickLangCode(data.langCode)
+    if (data.quantity) setQuickQuantity(String(data.quantity))
+
+    if (data.shipmentNumber) {
+      setScannerActive(false)
+      startTransition(async () => {
+        const result = await findPendingShipment(data.shipmentNumber!)
+
+        if (result.found && result.order) {
+          setOrder(result.order)
+          const unreceived = result.order.boxes.filter((b: BoxData) => !b.isReceived)
+          if (data.boxNumber) {
+            const hinted = unreceived.find((b: BoxData) => b.boxNumber.includes(`${data.boxNumber}`))
+            setSelectedBox(hinted || unreceived[0] || null)
+          } else {
+            setSelectedBox(unreceived[0] || null)
+          }
+          setScanState("CONFIRM")
         } else {
-          setSelectedBox(unreceived[0] || null)
+          setScannedNumber(data.shipmentNumber!)
+          setScanState("QUICK_ENTRY")
         }
-        setScanState("CONFIRM")
-      } else {
-        setScannedNumber(data.shipmentNumber)
-        setScanState("QUICK_ENTRY")
-      }
-    })
+      })
+    } else {
+      // No shipment number but has some data — go to quick entry
+      setScannerActive(false)
+      setScannedNumber("")
+      setScanState("QUICK_ENTRY")
+    }
   }, [])
 
   const handleConfirmReceive = () => {
@@ -254,7 +272,7 @@ export default function EntradaPage() {
           <h2 className="page-title">Registro de Entrada</h2>
           <p className="page-subtitle m-0">
             {mode === "CHOOSE" && "Como deseja registrar?"}
-            {mode === "SCAN" && scanState === "SCANNING" && "Aponte para o código de barras"}
+            {mode === "SCAN" && scanState === "SCANNING" && "Fotografe a etiqueta da caixa"}
             {mode === "SCAN" && scanState === "CONFIRM" && "Confira os dados e confirme"}
             {mode === "SCAN" && scanState === "QUICK_ENTRY" && "Remessa não encontrada"}
             {mode === "SCAN" && scanState === "SUCCESS" && ""}
@@ -314,7 +332,19 @@ export default function EntradaPage() {
       {/* ═══ SCAN MODE ═══ */}
       {mode === "SCAN" && scanState === "SCANNING" && (
         <>
-          <SmartScanner onScanResult={handleScanResult} continuous active={scannerActive} />
+          <LabelScanner onResult={handleLabelResult} active={scannerActive} />
+          {error && (
+            <div className="card p-4 flex flex-col items-center gap-3 animate-in text-center">
+              <AlertTriangle className="w-6 h-6" style={{ color: "var(--color-warning, #d97706)" }} />
+              <p className="text-sm m-0" style={{ color: "var(--text-secondary)" }}>{error}</p>
+              <button
+                onClick={() => { setScannerActive(false); setScannedNumber(""); setScanState("QUICK_ENTRY"); setError("") }}
+                className="btn btn-outline btn-sm text-sm"
+              >
+                <PenLine className="w-4 h-4" /> Preencher manualmente
+              </button>
+            </div>
+          )}
           {isPending && (
             <div className="card p-6 flex flex-col items-center gap-3 animate-in">
               <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--color-primary)" }} />
