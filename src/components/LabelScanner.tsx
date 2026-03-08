@@ -2,9 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react"
 import { Camera, XCircle, Loader2, ScanLine, PenLine } from "lucide-react"
-import { parseLabelText, mergeLabelData, type LabelData } from "@/lib/label-ocr"
-
-type WorkerRef = import("tesseract.js").Worker
+import { parseLabelText, type LabelData } from "@/lib/label-ocr"
 
 interface LabelScannerProps {
   onResult: (data: LabelData) => void
@@ -20,10 +18,7 @@ export default function LabelScanner({ onResult, active = true }: LabelScannerPr
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const rotatedCanvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const workerRef = useRef<WorkerRef | null>(null)
-  const workerLoadingRef = useRef(false)
   const mountedRef = useRef(true)
   const scanningRef = useRef(false)
   const lastScanRef = useRef(0)
@@ -51,65 +46,27 @@ export default function LabelScanner({ onResult, active = true }: LabelScannerPr
     }
   }, [])
 
-  // Initialize worker eagerly
-  const ensureWorker = useCallback(async (): Promise<WorkerRef | null> => {
-    if (workerRef.current) return workerRef.current
-    if (workerLoadingRef.current) {
-      // Wait for ongoing load
-      while (workerLoadingRef.current && mountedRef.current) {
-        await new Promise((r) => setTimeout(r, 100))
-      }
-      return workerRef.current
-    }
-
-    workerLoadingRef.current = true
-    try {
-      const { createWorker } = await import("tesseract.js")
-      const worker = await createWorker("por+eng")
-      if (!mountedRef.current) {
-        await worker.terminate()
-        return null
-      }
-      workerRef.current = worker
-      return worker
-    } catch (err) {
-      console.error("Failed to load Tesseract worker:", err)
-      return null
-    } finally {
-      workerLoadingRef.current = false
-    }
-  }, [])
-
-  /** Convert canvas to grayscale + binary threshold for cleaner OCR */
-  const preprocessFrame = useCallback((canvas: HTMLCanvasElement) => {
+  /** Capture frame from video, convert to base64, POST to /api/ocr */
+  const callOcr = useCallback(async (canvas: HTMLCanvasElement, video: HTMLVideoElement): Promise<string | null> => {
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
     const ctx = canvas.getContext("2d")
-    if (!ctx) return
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-    const data = imageData.data
-    for (let i = 0; i < data.length; i += 4) {
-      const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114
-      const bw = gray > 128 ? 255 : 0
-      data[i] = data[i + 1] = data[i + 2] = bw
-    }
-    ctx.putImageData(imageData, 0, 0)
-  }, [])
+    if (!ctx) return null
+    ctx.drawImage(video, 0, 0)
 
-  /** Crop right 35% of source and rotate 90° CW so vertical text becomes horizontal */
-  const cropAndRotate = useCallback((source: HTMLCanvasElement, target: HTMLCanvasElement) => {
-    const sw = source.width
-    const sh = source.height
-    const cropX = Math.floor(sw * 0.65)
-    const cropW = sw - cropX
+    // Convert to base64 (strip data:image/...;base64, prefix)
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85)
+    const base64 = dataUrl.split(",")[1]
 
-    target.width = sh
-    target.height = cropW
-    const ctx = target.getContext("2d")
-    if (!ctx) return
-    ctx.save()
-    ctx.translate(sh, 0)
-    ctx.rotate(Math.PI / 2)
-    ctx.drawImage(source, cropX, 0, cropW, sh, 0, 0, cropW, sh)
-    ctx.restore()
+    const res = await fetch("/api/ocr", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: base64 }),
+    })
+
+    if (!res.ok) return null
+    const { text } = await res.json()
+    return text || null
   }, [])
 
   // Scan loop
@@ -117,7 +74,6 @@ export default function LabelScanner({ onResult, active = true }: LabelScannerPr
     if (!scanningRef.current || !mountedRef.current) return
 
     const now = Date.now()
-    // Throttle: at least 2s between OCR attempts
     if (now - lastScanRef.current < 2000) {
       rafRef.current = requestAnimationFrame(() => runScanLoop())
       return
@@ -125,14 +81,7 @@ export default function LabelScanner({ onResult, active = true }: LabelScannerPr
 
     const video = videoRef.current
     const canvas = canvasRef.current
-    const rotatedCanvas = rotatedCanvasRef.current
-    if (!video || !canvas || !rotatedCanvas || video.readyState < 2) {
-      rafRef.current = requestAnimationFrame(() => runScanLoop())
-      return
-    }
-
-    const worker = workerRef.current
-    if (!worker) {
+    if (!video || !canvas || video.readyState < 2) {
       rafRef.current = requestAnimationFrame(() => runScanLoop())
       return
     }
@@ -140,68 +89,26 @@ export default function LabelScanner({ onResult, active = true }: LabelScannerPr
     lastScanRef.current = now
 
     try {
-      // Capture frame
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
-      const ctx = canvas.getContext("2d")
-      if (!ctx) {
-        rafRef.current = requestAnimationFrame(() => runScanLoop())
-        return
-      }
-      ctx.drawImage(video, 0, 0)
-
-      // Preprocess (grayscale + threshold)
-      preprocessFrame(canvas)
-
-      // Pass 1: Normal orientation
-      const blob1 = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, "image/png")
-      )
-      if (!blob1 || !scanningRef.current || !mountedRef.current) {
-        rafRef.current = requestAnimationFrame(() => runScanLoop())
-        return
-      }
-
-      const { data: data1 } = await worker.recognize(blob1)
+      const text = await callOcr(canvas, video)
       if (!scanningRef.current || !mountedRef.current) return
 
-      const pass1 = parseLabelText(data1.text)
-
-      // Pass 2: Rotated right portion (for vertical text like [1440] mi26-T)
-      let merged = pass1
-      const needsPass2 = pass1.confidence !== "none" && (!pass1.pubCode || !pass1.quantity)
-
-      if (needsPass2) {
-        cropAndRotate(canvas, rotatedCanvas)
-        preprocessFrame(rotatedCanvas)
-
-        const blob2 = await new Promise<Blob | null>((resolve) =>
-          rotatedCanvas.toBlob(resolve, "image/png")
-        )
-        if (blob2 && scanningRef.current && mountedRef.current) {
-          const { data: data2 } = await worker.recognize(blob2)
-          if (!scanningRef.current || !mountedRef.current) return
-          const pass2 = parseLabelText(data2.text)
-          merged = mergeLabelData(pass1, pass2)
+      if (text) {
+        const parsed = parseLabelText(text)
+        if (parsed.confidence !== "none") {
+          scanningRef.current = false
+          setPhase("FOUND")
+          onResultRef.current(parsed)
+          return
         }
-      }
-
-      // Check result
-      if (merged.confidence !== "none" && scanningRef.current && mountedRef.current) {
-        scanningRef.current = false
-        setPhase("FOUND")
-        onResultRef.current(merged)
-        return
       }
     } catch (err) {
       console.error("OCR scan error:", err)
     }
 
-    // Continue loop
     if (scanningRef.current && mountedRef.current) {
       rafRef.current = requestAnimationFrame(() => runScanLoop())
     }
-  }, [preprocessFrame, cropAndRotate])
+  }, [callOcr])
 
   // Start/stop based on active prop
   useEffect(() => {
@@ -219,19 +126,15 @@ export default function LabelScanner({ onResult, active = true }: LabelScannerPr
       setErrorDesc("")
       setPhase("LOADING")
 
-      // Start camera + worker in parallel
-      const [stream] = await Promise.all([
-        navigator.mediaDevices
-          .getUserMedia({
-            video: {
-              facingMode: "environment",
-              width: { ideal: 1920 },
-              height: { ideal: 1080 },
-            },
-          })
-          .catch(() => null),
-        ensureWorker(),
-      ])
+      const stream = await navigator.mediaDevices
+        .getUserMedia({
+          video: {
+            facingMode: "environment",
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
+        })
+        .catch(() => null)
 
       if (!mountedRef.current) {
         stream?.getTracks().forEach((t) => t.stop())
@@ -248,17 +151,11 @@ export default function LabelScanner({ onResult, active = true }: LabelScannerPr
         videoRef.current.srcObject = stream
       }
 
-      if (!workerRef.current) {
-        setErrorDesc("Erro ao carregar leitor OCR. Tente novamente.")
-        return
-      }
-
       setPhase("SCANNING")
       scanningRef.current = true
       lastScanRef.current = 0
       rafRef.current = requestAnimationFrame(() => runScanLoop())
 
-      // Fallback: show manual button after 15s
       fallbackTimerRef.current = setTimeout(() => {
         if (mountedRef.current && scanningRef.current) {
           setShowManualFallback(true)
@@ -273,22 +170,11 @@ export default function LabelScanner({ onResult, active = true }: LabelScannerPr
       stopScanLoop()
       stopStream()
     }
-  }, [active, stopStream, stopScanLoop, ensureWorker, runScanLoop])
-
-  // Terminate worker on unmount
-  useEffect(() => {
-    return () => {
-      if (workerRef.current) {
-        workerRef.current.terminate().catch(() => {})
-        workerRef.current = null
-      }
-    }
-  }, [])
+  }, [active, stopStream, stopScanLoop, runScanLoop])
 
   const handleRetry = () => {
     setErrorDesc("")
     setShowManualFallback(false)
-    // Re-trigger by toggling phase
     const restart = async () => {
       setPhase("LOADING")
       try {
@@ -302,11 +188,6 @@ export default function LabelScanner({ onResult, active = true }: LabelScannerPr
         streamRef.current = stream
         if (videoRef.current) {
           videoRef.current.srcObject = stream
-        }
-        await ensureWorker()
-        if (!workerRef.current || !mountedRef.current) {
-          setErrorDesc("Erro ao carregar leitor OCR.")
-          return
         }
         setPhase("SCANNING")
         scanningRef.current = true
@@ -330,7 +211,7 @@ export default function LabelScanner({ onResult, active = true }: LabelScannerPr
         className="overflow-hidden relative rounded-xl"
         style={{ minHeight: "280px", background: "#000" }}
       >
-        {/* Video preview — always rendered for camera feed */}
+        {/* Video preview */}
         <video
           ref={videoRef}
           autoPlay
@@ -344,14 +225,12 @@ export default function LabelScanner({ onResult, active = true }: LabelScannerPr
           }}
         />
 
-        {/* Offscreen canvases */}
+        {/* Offscreen canvas for frame capture */}
         <canvas ref={canvasRef} style={{ display: "none" }} />
-        <canvas ref={rotatedCanvasRef} style={{ display: "none" }} />
 
-        {/* Scanning overlay — animated scan line + guide */}
+        {/* Scanning overlay */}
         {phase === "SCANNING" && (
           <>
-            {/* Guide rectangle */}
             <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
               <div
                 style={{
@@ -363,7 +242,6 @@ export default function LabelScanner({ onResult, active = true }: LabelScannerPr
                   overflow: "hidden",
                 }}
               >
-                {/* Animated scan line */}
                 <div
                   style={{
                     position: "absolute",
@@ -378,7 +256,6 @@ export default function LabelScanner({ onResult, active = true }: LabelScannerPr
               </div>
             </div>
 
-            {/* Hint text */}
             <div className="absolute top-3 left-0 right-0 flex justify-center z-10">
               <span
                 className="text-xs font-bold px-3 py-1.5 rounded-full animate-pulse"
@@ -397,7 +274,7 @@ export default function LabelScanner({ onResult, active = true }: LabelScannerPr
             style={{ background: "rgba(0,0,0,0.7)", color: "white" }}
           >
             <Loader2 className="w-10 h-10 animate-spin mb-3" />
-            <p className="text-sm font-medium m-0">Carregando leitor...</p>
+            <p className="text-sm font-medium m-0">Iniciando câmera...</p>
           </div>
         )}
 
@@ -449,7 +326,6 @@ export default function LabelScanner({ onResult, active = true }: LabelScannerPr
             onClick={() => {
               stopScanLoop()
               stopStream()
-              // Signal "none" result so parent can switch to manual
               onResultRef.current({
                 shipmentNumber: null,
                 boxInfo: null,

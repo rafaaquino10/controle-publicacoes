@@ -62,28 +62,3 @@ export function parseLabelText(text: string): LabelData {
   return result
 }
 
-/** Merge results from two OCR passes, picking the best field from each */
-export function mergeLabelData(normal: LabelData, rotated: LabelData): LabelData {
-  const merged: LabelData = {
-    shipmentNumber: normal.shipmentNumber ?? rotated.shipmentNumber,
-    boxInfo: normal.boxInfo ?? rotated.boxInfo,
-    boxNumber: normal.boxNumber ?? rotated.boxNumber,
-    totalBoxes: normal.totalBoxes ?? rotated.totalBoxes,
-    quantity: normal.quantity ?? rotated.quantity,
-    pubCode: normal.pubCode ?? rotated.pubCode,
-    langCode: normal.langCode ?? rotated.langCode,
-    confidence: "none",
-  }
-
-  const hasShipment = merged.shipmentNumber !== null
-  const hasPub = merged.pubCode !== null
-  const hasQty = merged.quantity !== null
-
-  if (hasShipment && hasPub && hasQty) {
-    merged.confidence = "full"
-  } else if (hasShipment || hasPub || hasQty) {
-    merged.confidence = "partial"
-  }
-
-  return merged
-}
