@@ -9,6 +9,7 @@ export type MovementType =
   | "ISSUE_PUBLISHER"
   | "ISSUE_GROUP"
   | "ISSUE_CART"
+  | "ISSUE_DISPLAY"
   | "TRANSFER_IN"
   | "ADJUSTMENT"
   | "COUNT_CORRECTION"

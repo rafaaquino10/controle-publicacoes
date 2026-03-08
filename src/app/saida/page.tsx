@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from "react"
 import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
-import { Search, CheckCircle2, Users, MapPin, ShoppingCart, Clock } from "lucide-react"
+import { Search, CheckCircle2, Users, MapPin, ShoppingCart, BookOpen, Clock } from "lucide-react"
 import { searchItems, getItemById } from "@/actions/item.actions"
 import { getRecentItems, addRecentItem, type RecentItem } from "@/lib/recent-items"
 import { getLocations } from "@/actions/location.actions"
@@ -27,7 +27,7 @@ type LocationResult = {
   subStockType: SubStockType
 }
 
-type DestinationType = "PUBLICADORES" | "GRUPO_CAMPO" | "CARRINHO"
+type DestinationType = "PUBLICADORES" | "GRUPO_CAMPO" | "CARRINHO" | "EXPOSITOR"
 
 export default function SaidaPage() {
   const { data: session } = useSession()
@@ -106,6 +106,7 @@ export default function SaidaPage() {
         PUBLICADORES: "ISSUE_PUBLISHER",
         GRUPO_CAMPO: "ISSUE_GROUP",
         CARRINHO: "ISSUE_CART",
+        EXPOSITOR: "ISSUE_DISPLAY",
       }
       const result = await registerStockOut({
         itemId: selectedItem.id,
@@ -140,6 +141,7 @@ export default function SaidaPage() {
     { value: "PUBLICADORES", label: "Publicadores",   icon: Users,        color: "var(--color-primary)" },
     { value: "GRUPO_CAMPO",  label: "Grupo de Campo", icon: MapPin,       color: "var(--color-warn)" },
     { value: "CARRINHO",     label: "Carrinho",        icon: ShoppingCart, color: "var(--color-success)" },
+    { value: "EXPOSITOR",    label: "Expositor",       icon: BookOpen,     color: "var(--color-info)" },
   ]
 
   return (
@@ -269,7 +271,7 @@ export default function SaidaPage() {
               {/* Destino */}
               <div>
                 <label className="section-label mb-2 block">Destino</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {destOptions.map((opt) => {
                     const Icon = opt.icon
                     const selected = destination === opt.value
